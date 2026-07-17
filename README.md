@@ -6,7 +6,7 @@ SIBAU Degree Advisor is an independent web application project that will help pr
 
 ## Current status
 
-The repository currently contains the documentation foundation and the Excel knowledge base. Next.js has not been initialized, and no application packages have been installed.
+The repository contains the approved documentation foundation, the Excel knowledge base, and an initialized Next.js application. The current application is a minimal starter; eligibility and recommendation features have not been implemented yet.
 
 ## MVP principles
 
@@ -40,7 +40,7 @@ The current source workbook is:
 
 The workbook stores program information, source URLs, last-verified dates, model weights, test profiles, and validation sheets. Do not overwrite or replace it without documenting the source, verification date, and reason for the update.
 
-## Planned technology
+## Technology
 
 - Next.js
 - TypeScript
@@ -68,7 +68,31 @@ The current scope does not include Supabase, authentication, an external AI API,
 
 ## Getting started
 
-There is no runnable web application yet. The next approved milestone will initialize Next.js in this repository while preserving the knowledge base and documentation.
+Requirements:
+
+- Node.js 20.9 or newer
+- npm
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the local development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser. The main page is located at `src/app/page.tsx`.
+
+Run project checks:
+
+```bash
+npm run lint
+npm run build
+```
 
 ## License
 

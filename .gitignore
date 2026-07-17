@@ -31,6 +31,7 @@ pnpm-debug.log*
 
 # TypeScript and tool caches
 *.tsbuildinfo
+next-env.d.ts
 .turbo/
 .cache/
 
