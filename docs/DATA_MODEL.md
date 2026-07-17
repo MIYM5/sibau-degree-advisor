@@ -1,6 +1,6 @@
 # Data Model
 
-This document describes the concepts SIBAU Degree Advisor needs. Field names are illustrative until the Next.js and TypeScript foundation is approved.
+This document describes the concepts SIBAU Degree Advisor needs. The initial TypeScript definitions are in `src/types/`.
 
 ## Design principles
 
@@ -19,25 +19,33 @@ This document describes the concepts SIBAU Degree Advisor needs. Field names are
 | `name` | Official or source-aligned program name. |
 | `category` | Broad area used for browsing and explanations. |
 | `duration` | Program length as recorded in the knowledge base. |
+| `requiredGroups` | Intermediate groups accepted by the selected eligibility rule. `Any Intermediate/F.Sc group` supports the working rule for included non-engineering programs. |
+| `requiredSubjects` | Hard subject requirements expressed as either all listed subjects or one of several alternatives. |
+| `minimumSubjectPercentage` | Hard subject threshold, or `null` when none applies. |
+| `minimumOverallPercentage` | Hard overall threshold, or `null` when none applies. |
+| `eligibilityNote` | Plain-language limits, conflicts, or exceptions. |
+| `eligibilityClassification` | `confirmed_official`, `working_mvp`, or `verification_required`. |
+| `officialSourceUrl` | Exact official source URL recorded for the program. |
+| `lastVerified` | Source verification date stored as `YYYY-MM-DD`. |
 | `description` | Short, neutral program summary. |
 | `careerOptions` | Illustrative career directions, not job guarantees. |
-| `eligibilityRule` | Reference to structured hard-rule data. |
 | `academicWeights` | Model-assumption weights by subject. |
 | `interestWeights` | Model-assumption weights by interest dimension. |
 | `aptitudeWeights` | Model-assumption weights by aptitude dimension. |
-| `evidence` | Source URL, verified date, admission year, and status. |
+| `weightsStatus` | Explicit label showing that the weights are model-defined recommendation assumptions. |
 
 ## Eligibility rule
 
 | Field | Purpose |
 | --- | --- |
-| `classification` | `confirmed_official`, `working_mvp`, or `verification_required`. |
-| `allowedGroups` | Groups explicitly allowed by the selected rule. |
+| `eligibilityClassification` | `confirmed_official`, `working_mvp`, or `verification_required`. |
+| `requiredGroups` | Groups explicitly allowed by the selected rule. |
 | `requiredSubjects` | Subjects that are hard requirements, when supported. |
 | `minimumSubjectPercentage` | Hard subject threshold, if supported. |
 | `minimumOverallPercentage` | Hard overall threshold, if supported. |
-| `notes` | Human-readable limits, conflicts, or exceptions. |
-| `evidenceIds` | Links to one or more evidence records. |
+| `eligibilityNote` | Human-readable limits, conflicts, or exceptions. |
+| `officialSourceUrl` | Program-level evidence URL preserved from the workbook. |
+| `lastVerified` | Date on which the source was last checked. |
 
 Do not put preferred subjects in `requiredSubjects`. For example, Mathematics can affect suitability for a computing program without becoming a hard requirement for a Pre-Medical student under the working MVP rule.
 
@@ -57,41 +65,41 @@ The Excel workbook currently records `2026-07-17` as the program-row last-verifi
 
 ## Student profile
 
-The first MVP should keep this object in memory only.
+The first MVP should keep this object in memory only. The `name` field is used for the current guided experience but must not be persisted or logged.
 
 | Field | Purpose |
 | --- | --- |
+| `name` | Student-provided display name used only in the in-memory session. |
 | `intermediateGroup` | Student's completed Intermediate/F.Sc group. |
-| `overallPercentage` | Optional normalized overall percentage if collected. |
-| `subjectMarks` | Map of studied subjects to percentages. Missing means not studied or not supplied. |
-| `interestResponses` | Answers mapped to defined interest dimensions. |
-| `aptitudeResponses` | Self-assessment answers mapped to defined aptitude dimensions. |
-| `consentAcknowledgements` | Confirmation that guidance and privacy notices were read, if needed. |
+| `subjectMarks` | List of marks for subjects actually studied. Missing subjects are omitted rather than recorded as zero. |
+| `interestScores` | Scores mapped to defined interest dimensions. |
+| `aptitudeScores` | Self-assessment scores mapped to defined aptitude dimensions. |
 
-Do not include names, CNIC numbers, phone numbers, email addresses, roll numbers, or marks-sheet images in the first MVP.
+Do not persist names or include CNIC numbers, phone numbers, email addresses, roll numbers, or marks-sheet images in the first MVP.
 
-## Eligibility result
+## Subject mark
 
 | Field | Purpose |
 | --- | --- |
-| `status` | `eligible`, `not_eligible`, or `verification_required`. |
-| `reasonCodes` | Stable codes for tests and explanations. |
-| `explanation` | Plain-language result. |
-| `failedRequirements` | Hard rules that were not met. |
-| `evidence` | Sources and verification dates used. |
-| `warnings` | Conflicts, current-advertisement checks, or missing data. |
+| `subject` | A subject the student actually studied. |
+| `obtainedMarks` | Marks the student received. |
+| `totalMarks` | Maximum possible marks. |
+| `calculatedPercentage` | Derived percentage supplied to later eligibility and suitability logic. |
 
-## Suitability result
+## Recommendation result
 
 | Field | Purpose |
 | --- | --- |
+| `programId` | Stable ID of the evaluated program. |
+| `programName` | Display name of the evaluated program. |
+| `eligibilityStatus` | `Eligible`, `Not eligible`, or `Verification required`. |
 | `academicScore` | Model score from available relevant subjects. |
 | `interestScore` | Model score from interest dimensions. |
 | `aptitudeScore` | Model score from aptitude dimensions. |
 | `finalScore` | Model combination used for eligible ranking. |
-| `confidence` | Model estimate such as high, medium, or low. |
-| `strengths` | Main positive contributors. |
-| `gaps` | Preparation gaps that do not change eligibility unless they are hard requirements. |
+| `rank` | Numeric rank for an eligible program; `null` for other eligibility states. |
+| `reasons` | Plain-language reasons supporting the result. |
+| `improvementAreas` | Preparation areas that do not override hard eligibility. |
 
 All these scores and weights are model assumptions, not official Sukkur IBA University admission weightages.
 
