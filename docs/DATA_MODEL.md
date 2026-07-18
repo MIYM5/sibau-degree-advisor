@@ -257,6 +257,22 @@ The results route checks the payload structure, known program IDs, score ranges,
 
 Version 2 engine results also store the assessment mode, scoring-model version, questionnaire version, RIASEC evidence label, aptitude evidence label, and component weights. These fields make payload mismatches detectable rather than allowing a silent fallback.
 
+## Recommendation presentation
+
+The presentation adapter creates a temporary view model from an already validated engine result:
+
+| Field | Purpose |
+| --- | --- |
+| `topMatches` | Existing eligible ranks 1â€“3, in engine order. |
+| `alternativeOptions` | Existing eligible ranks 4â€“5, in engine order. |
+| `comparisonWithPrevious` | Rank 2 onward: absolute full-precision score difference and a display label relative to the immediately preceding eligible rank. |
+| `verificationRequired` | Existing unranked verification-required results. |
+| `notEligible` | Existing unranked not-eligible results. |
+| `institutionalFitWarnings` | Engine warnings copied without changing their content. |
+| `profileMethodologyPresentation` | Mode, formula, evidence labels, RIASEC profile, and brief task outcomes for display. Version 1 receives a compatible legacy summary. |
+
+This view model is not stored as a second recommendation result. It does not recalculate, sort, or change scores, ranks, confidence, eligibility, or warnings.
+
 All these scores and weights are model assumptions, not official Sukkur IBA University admission weightages.
 
 ## Validation rules for imported knowledge-base data

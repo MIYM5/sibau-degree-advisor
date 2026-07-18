@@ -5,20 +5,53 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { programs } from "@/data/programs";
-import { calculateOverallPercentage } from "@/lib/assessment-form";
+import {
+  buildProfileMethodologyPresentation,
+  buildRecommendationPresentation,
+  SCORE_DIFFERENCE_GUIDANCE,
+} from "@/lib/recommendation-presentation";
 import {
   ASSESSMENT_DRAFT_SESSION_KEY,
   RECOMMENDATION_SESSION_KEY,
   parseRecommendationSessionPayload,
   type RecommendationSessionPayload,
 } from "@/lib/assessment-session";
+import type {
+  PresentedEligibleRecommendation,
+  RecommendationResult,
+} from "@/types/recommendation";
 
 import { SiteHeader } from "../site-header";
 import { EligibilitySummary } from "./eligibility-summary";
 import { InstitutionalFitWarning } from "./institutional-fit-warning";
+import { ProfileSummary } from "./profile-summary";
 import { RecommendationCard } from "./recommendation-card";
+import { RecommendationGroup } from "./recommendation-group";
 
 const programsById = new Map(programs.map((program) => [program.id, program]));
+
+function InvalidResultsState() {
+  return (
+    <main className="min-h-screen bg-slate-50 text-slate-950">
+      <SiteHeader compact />
+      <section className="mx-auto max-w-2xl px-5 py-20 text-center sm:py-28">
+        <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-teal-100 text-2xl font-black text-teal-800">
+          ?
+        </span>
+        <h1 className="mt-6 font-serif text-4xl font-bold tracking-tight">
+          Complete the assessment first
+        </h1>
+        <p className="mt-4 leading-7 text-slate-600">
+          We could not find valid recommendation results in this browser
+          session. Complete or retake the assessment to generate them.
+        </p>
+        <Link href="/assessment" className="primary-button mt-8">
+          Go to Assessment
+        </Link>
+      </section>
+    </main>
+  );
+}
 
 export function ResultsPage() {
   const router = useRouter();
@@ -49,47 +82,64 @@ export function ResultsPage() {
       <main className="min-h-screen bg-slate-50 text-slate-950">
         <SiteHeader compact />
         <div className="mx-auto max-w-3xl px-5 py-24 text-center">
-          <p className="text-sm font-bold text-teal-700">Loading your results…</p>
+          <p className="text-sm font-bold text-teal-700">
+            Loading your results…
+          </p>
         </div>
       </main>
     );
   }
 
-  if (payload === null) {
-    return (
-      <main className="min-h-screen bg-slate-50 text-slate-950">
-        <SiteHeader compact />
-        <section className="mx-auto max-w-2xl px-5 py-20 text-center sm:py-28">
-          <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-teal-100 text-2xl font-black text-teal-800">
-            ?
-          </span>
-          <h1 className="mt-6 font-serif text-4xl font-bold tracking-tight">
-            Complete the assessment first
-          </h1>
-          <p className="mt-4 leading-7 text-slate-600">
-            We could not find valid recommendation results in this browser
-            session. Complete or retake the assessment to generate them.
-          </p>
-          <Link href="/assessment" className="primary-button mt-8">
-            Go to Assessment
-          </Link>
-        </section>
-      </main>
-    );
+  if (payload === null) return <InvalidResultsState />;
+
+  const presentation = buildRecommendationPresentation(
+    payload.recommendationResult,
+  );
+  const profileSummary = buildProfileMethodologyPresentation(payload);
+  if (!presentation || !profileSummary) return <InvalidResultsState />;
+
+  const { componentWeights } = profileSummary;
+  const interestLabel = payload.version === 2 ? "RIASEC interests" : "Interests";
+  const aptitudeLabel = payload.version === 2 ? "Brief aptitude" : "Aptitude";
+
+  function confidenceContext(recommendation: RecommendationResult): string | undefined {
+    if (payload?.version !== 2) return undefined;
+    if (payload.recommendationInput.assessmentMode === "quick") {
+      return "Quick Guidance uses preliminary interest evidence and limited five-task aptitude evidence, so confidence never exceeds Medium.";
+    }
+    if (recommendation.confidence === "High") {
+      return (
+        recommendation.confidenceNotes?.[0] ??
+        "The aptitude component is based on a brief five-task exercise and remains limited evidence."
+      );
+    }
+    return "Detailed Guidance uses stronger interest evidence, while the five-task aptitude component remains limited evidence.";
   }
 
-  const studentProfile =
-    payload.version === 1
-      ? payload.studentProfile
-      : payload.recommendationInput.academicProfile;
-  const { recommendationResult } = payload;
-  const componentWeights =
-    payload.version === 2
-      ? payload.recommendationResult.componentWeights
-      : { academic: 0.5, interest: 0.3, aptitude: 0.2 };
-  const overallPercentage = calculateOverallPercentage(
-    studentProfile.subjectMarks,
-  );
+  function recommendationCard(
+    item: PresentedEligibleRecommendation,
+  ) {
+    const program = programsById.get(item.recommendation.programId);
+    return program ? (
+      <RecommendationCard
+        key={item.recommendation.programId}
+        recommendation={item.recommendation}
+        program={program}
+        componentWeights={componentWeights}
+        interestLabel={interestLabel}
+        aptitudeLabel={aptitudeLabel}
+        comparisonWithPrevious={item.comparisonWithPrevious}
+        confidenceContext={confidenceContext(item.recommendation)}
+      />
+    ) : null;
+  }
+
+  const alternativeNote =
+    presentation.additionalEligibleCount > 0
+      ? `${presentation.additionalEligibleCount} additional eligible program${presentation.additionalEligibleCount === 1 ? " is" : "s are"} outside this five-program shortlist.`
+      : presentation.alternativeOptions.length < 2
+        ? "Fewer than five eligible programs are available, so no empty alternative cards are shown."
+        : undefined;
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -102,12 +152,12 @@ export function ResultsPage() {
               Your degree guidance
             </p>
             <h1 className="mt-3 font-serif text-4xl font-bold tracking-tight sm:text-5xl">
-              Recommendations for {studentProfile.name}
+              Recommendations for {profileSummary.profile.name}
             </h1>
             <p className="mt-4 max-w-2xl leading-7 text-slate-300">
-              These results combine your academic profile, interests, and
-              aptitude after checking eligibility separately. They guide
-              exploration and do not guarantee admission.
+              Eligibility was checked separately before eligible programs were
+              ranked by suitability. These recommendations guide exploration
+              and do not guarantee admission or career success.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -129,120 +179,58 @@ export function ResultsPage() {
         </div>
       </section>
 
-      <div className="mx-auto w-full max-w-7xl space-y-12 px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
-        <section aria-labelledby="student-summary-heading">
-          <h2 id="student-summary-heading" className="sr-only">
-            Student summary
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Student
-              </p>
-              <p className="mt-2 text-lg font-bold">{studentProfile.name}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Intermediate group
-              </p>
-              <p className="mt-2 text-lg font-bold">
-                {studentProfile.intermediateGroup}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-teal-200 bg-teal-50 p-5 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wider text-teal-700">
-                Overall percentage
-              </p>
-              <p className="mt-2 text-2xl font-black tabular-nums text-teal-950">
-                {overallPercentage === null
-                  ? "Not available"
-                  : `${overallPercentage.toFixed(1)}%`}
-              </p>
-            </div>
-          </div>
-        </section>
-
+      <div className="mx-auto w-full max-w-7xl space-y-14 px-5 py-10 sm:px-8 sm:py-14 lg:px-10">
         <EligibilitySummary
-          eligibleCount={recommendationResult.eligibleRecommendations.length}
-          verificationCount={recommendationResult.verificationRequired.length}
-          notEligibleCount={recommendationResult.notEligible.length}
+          eligibleCount={presentation.totalEligibleCount}
+          verificationCount={presentation.verificationRequired.length}
+          notEligibleCount={presentation.notEligible.length}
         />
 
         <aside className="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm leading-6 text-sky-950">
-          Eligibility evidence can change between admission cycles. Always
-          confirm requirements in the current Sukkur IBA admission advertisement
-          before applying.
+          Eligibility and suitability are separate. Admission evidence can
+          change annually, so confirm every requirement in the current Sukkur
+          IBA admission advertisement before applying.
         </aside>
 
         <InstitutionalFitWarning
-          warnings={recommendationResult.institutionalFitWarnings}
+          warnings={presentation.institutionalFitWarnings}
         />
 
-        <section aria-labelledby="top-recommendations-heading">
-          <div className="max-w-3xl">
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">
-              Ranked eligible programs
-            </p>
-            <h2
-              id="top-recommendations-heading"
-              className="mt-2 font-serif text-3xl font-bold tracking-tight sm:text-4xl"
-            >
-              Top recommendations
-            </h2>
-            <p className="mt-3 leading-7 text-slate-600">
-              Up to five programs are ranked by suitability. Eligibility was
-              checked before these scores were ordered.
-            </p>
-          </div>
-          <div className="mt-7 space-y-5">
-            {recommendationResult.topFiveEligibleRecommendations.length === 0 && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
-                No program currently has an Eligible result. Review the
-                verification-required section and confirm the current admission
-                advertisement before making a decision.
-              </div>
-            )}
-            {recommendationResult.topFiveEligibleRecommendations.map(
-              (recommendation) => {
-                const program = programsById.get(recommendation.programId);
-                return program ? (
-                  <RecommendationCard
-                    key={recommendation.programId}
-                    recommendation={recommendation}
-                    program={program}
-                    componentWeights={componentWeights}
-                    interestLabel={
-                      payload.version === 2 ? "RIASEC interests" : "Interests"
-                    }
-                    aptitudeLabel={
-                      payload.version === 2
-                        ? "Brief aptitude"
-                        : "Aptitude"
-                    }
-                  />
-                ) : null;
-              },
-            )}
-          </div>
-        </section>
+        <RecommendationGroup
+          headingId="top-matches-heading"
+          eyebrow="Ranks 1–3 · eligible programs"
+          title="Top Matches"
+          description="These are the first three eligible programs in the engine's existing deterministic ranking. Their scores were not recalculated for this display."
+          note={SCORE_DIFFERENCE_GUIDANCE}
+          emptyMessage="No program currently has an Eligible result. Review the verification section and confirm the current admission advertisement before interpreting suitability."
+        >
+          {presentation.topMatches.length > 0
+            ? presentation.topMatches.map(recommendationCard)
+            : undefined}
+        </RecommendationGroup>
 
-        {recommendationResult.verificationRequired.length > 0 && (
-          <section aria-labelledby="verification-heading">
-            <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 sm:p-6">
-              <h2
-                id="verification-heading"
-                className="font-serif text-2xl font-bold text-amber-950 sm:text-3xl"
-              >
-                Programs requiring current-advertisement verification
-              </h2>
-              <p className="mt-3 max-w-3xl leading-7 text-amber-900">
-                These programs have suitability scores but no eligible rank.
-                Their current admission evidence must be confirmed against the
-                latest Sukkur IBA admission advertisement.
-              </p>
-            </div>
-            <div className="mt-5 space-y-5">
-              {recommendationResult.verificationRequired.map((recommendation) => {
+        <RecommendationGroup
+          headingId="alternative-options-heading"
+          eyebrow="Ranks 4–5 · eligible programs"
+          title="Alternative Options"
+          description="These eligible programs remain useful options in the five-program shortlist, especially when score differences are small or preparation goals differ."
+          note={alternativeNote}
+          emptyMessage="There are no eligible programs ranked fourth or fifth. No placeholder cards are shown."
+        >
+          {presentation.alternativeOptions.length > 0
+            ? presentation.alternativeOptions.map(recommendationCard)
+            : undefined}
+        </RecommendationGroup>
+
+        <RecommendationGroup
+          headingId="verification-heading"
+          eyebrow="Unranked · current evidence check needed"
+          title="Programs requiring admission verification"
+          description="These programs retain their suitability scores but receive no rank. Their admission evidence must be checked against the current advertisement."
+          emptyMessage="No program currently falls into the Verification required classification."
+        >
+          {presentation.verificationRequired.length > 0
+            ? presentation.verificationRequired.map((recommendation) => {
                 const program = programsById.get(recommendation.programId);
                 return program ? (
                   <RecommendationCard
@@ -251,36 +239,39 @@ export function ResultsPage() {
                     program={program}
                     variant="verification"
                     componentWeights={componentWeights}
-                    interestLabel={
-                      payload.version === 2 ? "RIASEC interests" : "Interests"
-                    }
-                    aptitudeLabel={
-                      payload.version === 2
-                        ? "Brief aptitude"
-                        : "Aptitude"
-                    }
+                    interestLabel={interestLabel}
+                    aptitudeLabel={aptitudeLabel}
+                    confidenceContext={confidenceContext(recommendation)}
                   />
                 ) : null;
-              })}
-            </div>
-          </section>
-        )}
+              })
+            : undefined}
+        </RecommendationGroup>
 
-        {recommendationResult.notEligible.length > 0 && (
-          <section aria-labelledby="not-eligible-heading">
+        <section aria-labelledby="not-eligible-heading">
+          <div className="max-w-3xl">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-600">
+              Unranked · stored requirements not met
+            </p>
             <h2
               id="not-eligible-heading"
-              className="font-serif text-2xl font-bold sm:text-3xl"
+              className="mt-2 font-serif text-3xl font-bold tracking-tight sm:text-4xl"
             >
-              Not eligible under the stored rules
+              Programs currently not eligible
             </h2>
-            <p className="mt-3 max-w-3xl leading-7 text-slate-600">
-              These programs remain visible for transparency. They are not
-              ranked, and their reasons explain which stored requirement was not
-              met.
+            <p className="mt-3 leading-7 text-slate-600">
+              These outcomes reflect the stored rules and current student
+              information. Admission rules can change annually, so they should
+              not be treated as permanent.
             </p>
-            <div className="mt-5 space-y-3">
-              {recommendationResult.notEligible.map((recommendation) => {
+          </div>
+          {presentation.notEligible.length === 0 ? (
+            <p className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm">
+              No program currently falls into the Not eligible classification.
+            </p>
+          ) : (
+            <div className="mt-6 space-y-3">
+              {presentation.notEligible.map((recommendation) => {
                 const program = programsById.get(recommendation.programId);
                 return (
                   <details
@@ -294,10 +285,13 @@ export function ResultsPage() {
                             {recommendation.programName}
                           </span>
                           <span className="ml-2 text-sm text-slate-500">
-                            Not eligible · no rank
+                            Currently not eligible · no rank
                           </span>
                         </span>
-                        <span aria-hidden="true" className="text-lg group-open:rotate-45">
+                        <span
+                          aria-hidden="true"
+                          className="text-lg transition group-open:rotate-45"
+                        >
                           +
                         </span>
                       </span>
@@ -305,20 +299,25 @@ export function ResultsPage() {
                     <div className="border-t border-slate-200 px-5 py-4 text-sm leading-6 text-slate-600">
                       <ul className="space-y-2">
                         {recommendation.reasons.map((reason) => (
-                          <li key={reason}>• {reason}</li>
+                          <li key={reason} className="flex gap-2">
+                            <span aria-hidden="true">•</span>
+                            <span>{reason}</span>
+                          </li>
                         ))}
                       </ul>
                       {program && (
-                        <div className="mt-3 border-t border-slate-100 pt-3">
+                        <div className="mt-4 border-t border-slate-100 pt-4">
                           <p>{program.eligibilityNote}</p>
-                          <a
-                            href={program.officialSourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-3 inline-flex rounded-lg font-bold text-teal-700 underline decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
-                          >
-                            Check official source
-                          </a>
+                          {program.officialSourceUrl && (
+                            <a
+                              href={program.officialSourceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-3 inline-flex rounded-lg font-bold text-teal-700 underline decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+                            >
+                              Check official source
+                            </a>
+                          )}
                           <p className="mt-2 text-xs text-slate-500">
                             Last verified: {program.lastVerified}
                           </p>
@@ -329,56 +328,10 @@ export function ResultsPage() {
                 );
               })}
             </div>
-          </section>
-        )}
-
-        <section className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">
-            How the model works
-          </p>
-          <h2 className="mt-2 font-serif text-2xl font-bold sm:text-3xl">
-            Transparent methodology
-          </h2>
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-xl bg-slate-50 p-4">
-              <p className="text-2xl font-black">
-                {componentWeights.academic * 100}%
-              </p>
-              <p className="mt-1 text-sm font-bold text-slate-600">Academic suitability</p>
-            </div>
-            <div className="rounded-xl bg-slate-50 p-4">
-              <p className="text-2xl font-black">
-                {componentWeights.interest * 100}%
-              </p>
-              <p className="mt-1 text-sm font-bold text-slate-600">Interests</p>
-            </div>
-            <div className="rounded-xl bg-slate-50 p-4">
-              <p className="text-2xl font-black">
-                {componentWeights.aptitude * 100}%
-              </p>
-              <p className="mt-1 text-sm font-bold text-slate-600">
-                {payload.version === 2
-                  ? "Brief aptitude indication"
-                  : "Aptitude self-assessment"}
-              </p>
-            </div>
-          </div>
-          <p className="mt-5 text-sm leading-6 text-slate-600">
-            Eligibility is checked separately and cannot be changed by a high
-            suitability score. These weights are project assumptions, not
-            official university admission weightages. SIBAU Degree Advisor is an
-            independent project and does not make admission decisions.
-          </p>
-          {payload.version === 2 && (
-            <p className="mt-3 text-sm font-medium leading-6 text-amber-800">
-              {payload.recommendationResult.scoringModelVersion} · RIASEC
-              evidence: {payload.recommendationResult.riasecEvidenceLabel} ·
-              Aptitude evidence: {payload.recommendationResult.aptitudeEvidenceLabel}.
-              The aptitude component is based on a brief five-task exercise and
-              remains limited evidence.
-            </p>
           )}
         </section>
+
+        <ProfileSummary summary={profileSummary} />
       </div>
     </main>
   );

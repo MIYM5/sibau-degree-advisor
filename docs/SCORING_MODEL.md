@@ -183,6 +183,18 @@ The workbook labels them “Model-defined recommendation weights.” Nonzero sub
 - Exact ties use program name and then program ID as deterministic tie-breakers.
 - Retain full numeric precision internally; round only in displays and test reporting.
 
+### Results-page grouping and adjacent-score labels
+
+The presentation layer shows existing eligible ranks 1â€“3 under **Top Matches** and ranks 4â€“5 under **Alternative Options**. It does not change deterministic ordering or create placeholder cards when fewer than five eligible programs exist. Verification-required and not-eligible programs remain unranked and separate.
+
+For rank 2 onward, the display compares the full-precision final score with the eligible program immediately above it:
+
+- difference below 3: `Approximately equal match`;
+- difference from 3 to below 7: `Moderately stronger match`;
+- difference of 7 or more: `Clearly stronger match`.
+
+Equal scores are approximately equal, and rank 1 has no comparison label. The UI formats the difference to one decimal place. These are presentation labels only: small score differences should not be treated as proof that one program is definitively better than another, and the thresholds do not claim statistical significance.
+
 ## Recommendation bands
 
 - 85 to 100: Excellent Match

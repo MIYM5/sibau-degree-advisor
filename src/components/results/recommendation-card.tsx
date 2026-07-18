@@ -1,6 +1,9 @@
 import type { DegreeProgram } from "@/types/program";
-import type { RecommendationResult } from "@/types/recommendation";
-import type { RecommendationComponentWeights } from "@/types/recommendation";
+import type {
+  RecommendationComponentWeights,
+  RecommendationResult,
+  RecommendationScoreComparison,
+} from "@/types/recommendation";
 
 interface RecommendationCardProps {
   recommendation: RecommendationResult;
@@ -9,6 +12,8 @@ interface RecommendationCardProps {
   componentWeights?: RecommendationComponentWeights;
   interestLabel?: string;
   aptitudeLabel?: string;
+  comparisonWithPrevious?: RecommendationScoreComparison | null;
+  confidenceContext?: string;
 }
 
 function score(value: number): string {
@@ -22,6 +27,8 @@ export function RecommendationCard({
   componentWeights = { academic: 0.5, interest: 0.3, aptitude: 0.2 },
   interestLabel = "Interests",
   aptitudeLabel = "Aptitude",
+  comparisonWithPrevious = null,
+  confidenceContext,
 }: RecommendationCardProps) {
   const isRanked = recommendation.eligibilityStatus === "Eligible";
   const scoreItems = [
@@ -56,8 +63,8 @@ export function RecommendationCard({
                 {recommendation.rank}
               </span>
             ) : (
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-amber-100 text-lg font-black text-amber-800">
-                ?
+              <span className="grid min-h-12 min-w-16 shrink-0 place-items-center rounded-2xl bg-amber-100 px-2 text-xs font-black uppercase tracking-wide text-amber-800">
+                No rank
               </span>
             )}
             <div>
@@ -77,6 +84,11 @@ export function RecommendationCard({
                 {!isRanked && (
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
                     Verification required
+                  </span>
+                )}
+                {comparisonWithPrevious && (
+                  <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-800">
+                    {comparisonWithPrevious.label}
                   </span>
                 )}
               </div>
@@ -108,10 +120,36 @@ export function RecommendationCard({
           ))}
         </div>
 
-        {recommendation.reasons[0] && (
-          <p className="mt-5 text-sm leading-6 text-slate-600">
-            {recommendation.reasons[0]}
+        {comparisonWithPrevious && (
+          <p className="mt-4 text-sm leading-6 text-sky-900">
+            Compared with the eligible program immediately above: {" "}
+            <span className="font-bold">{comparisonWithPrevious.label}</span>{" "}
+            ({comparisonWithPrevious.difference.toFixed(1)} points apart).
           </p>
+        )}
+
+        {confidenceContext && (
+          <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-950">
+            {confidenceContext}
+          </p>
+        )}
+
+        {recommendation.reasons.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Key reasons
+            </p>
+            <ul className="mt-2 space-y-1 text-sm leading-6 text-slate-600">
+              {recommendation.reasons.slice(0, 3).map((reason) => (
+                <li key={reason} className="flex gap-2">
+                  <span aria-hidden="true" className="text-teal-700">
+                    •
+                  </span>
+                  <span>{reason}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
@@ -176,6 +214,10 @@ export function RecommendationCard({
             </a>
             <p className="mt-2 text-xs text-slate-500">
               Last verified: {program.lastVerified}
+            </p>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Eligibility and suitability are separate. Verify admission
+              requirements against the current advertisement.
             </p>
           </div>
         </div>

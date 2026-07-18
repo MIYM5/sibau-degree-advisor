@@ -20,6 +20,16 @@ export type RecommendationBand =
 
 export type RecommendationConfidence = "High" | "Medium" | "Low";
 
+export type MeaningfulDifferenceLabel =
+  | "Approximately equal match"
+  | "Moderately stronger match"
+  | "Clearly stronger match";
+
+export interface RecommendationScoreComparison {
+  difference: number;
+  label: MeaningfulDifferenceLabel;
+}
+
 export type ScoringModelVersion =
   | "version-1-custom-50-30-20"
   | "version-2-quick-55-30-15"
@@ -110,6 +120,11 @@ export interface UnrankedRecommendationResult
 export type RecommendationResult =
   | EligibleRecommendationResult
   | UnrankedRecommendationResult;
+
+export interface PresentedEligibleRecommendation {
+  recommendation: EligibleRecommendationResult;
+  comparisonWithPrevious: RecommendationScoreComparison | null;
+}
 
 export interface Version2RecommendationMetadata {
   version: 2;

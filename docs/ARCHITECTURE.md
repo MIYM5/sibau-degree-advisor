@@ -16,6 +16,7 @@ App Router pages and reusable React components will handle:
 - Intermediate group and marks input;
 - interest and aptitude questions;
 - results, explanations, warnings, and source links;
+- presentation-only grouping of ranked results and score-gap labels;
 - accessible loading, validation, and error states.
 
 Presentation components should display decisions, not contain admission rules.
@@ -79,9 +80,20 @@ scripts/                # Development validation and focused tests
 6. `assessment-to-student-profile.ts` creates a discriminated Version 2 recommendation input containing the academic profile, selected mode, native RIASEC result, and brief aptitude result. It does not force Version 2 evidence into legacy `StudentProfile` dimensions.
 7. The recommendation engine checks eligibility first. Quick uses 55/30/15 and Detailed uses 50/35/15 for academic, RIASEC, and brief aptitude suitability; only eligible programs are ranked.
 8. A versioned payload containing the editable draft, strict recommendation input, scoring metadata, and generated result is written to browser `sessionStorage`. Version 1 payloads retain their original profile-based shape.
-9. `/results` validates that payload before displaying summaries, ranked eligible programs, unranked verification-required and not-eligible programs, explanations, source notes, and warnings.
+9. `/results` validates that payload, then `recommendation-presentation.ts` groups existing eligible ranks 1â€“3 as Top Matches and ranks 4â€“5 as Alternative Options. It compares adjacent eligible scores for display without sorting or recalculating them.
+10. The page shows engine warnings before recommendation cards, keeps verification-required and not-eligible programs unranked, and finishes with a mode-aware student-profile and methodology summary. Version 1 payloads use a compatible legacy summary.
 
 The engine runs only after final Review confirmation. The interface does not copy eligibility or scoring rules into React components.
+
+### Results presentation boundary
+
+`recommendation-presentation.ts` is a pure display adapter. It validates rank sequence and eligibility classifications, preserves the engine's deterministic order, takes at most ranks 1â€“5 for the shortlist, and adds adjacent-score comparison labels. It never calls scoring or eligibility logic.
+
+- below 3 points: `Approximately equal match`;
+- 3 to below 7 points: `Moderately stronger match`;
+- 7 points or more: `Clearly stronger match`.
+
+Rank 1 has no comparison label. Full precision remains in the engine result; the UI formats scores and differences to one decimal place. Small differences are guidance and must not be described as statistically significant.
 
 ## Browser-session state transfer
 

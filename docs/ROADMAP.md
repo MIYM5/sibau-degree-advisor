@@ -91,6 +91,20 @@ Status: **Complete for Version 2 development; expert validation pending**
 
 The activated formulas, mappings, and confidence thresholds remain project assumptions. They are not official SIBAU weightages or validated psychometric standards.
 
+### Stage 7 â€” Results presentation and evidence summary
+
+Status: **Complete for Version 2 presentation review**
+
+- Show eligible ranks 1â€“3 as Top Matches and ranks 4â€“5 as Alternative Options.
+- Keep verification-required and not-eligible results separate and unranked.
+- Add adjacent-score difference labels without recalculating or reordering results.
+- Preserve and prominently display every engine-generated institutional-fit warning.
+- Show mode, formula, model version, RIASEC profile, all six RIASEC scores, brief task outcomes, and evidence limitations.
+- Preserve compatible Version 1 results with a legacy methodology summary.
+- Validate presentation input and cover empty and short eligible lists without placeholder cards.
+
+The grouping and difference thresholds are presentation assumptions. They do not imply statistical significance or change the underlying recommendation model.
+
 ### Planned later stages
 
 - Review the RIASEC program mappings with faculty and career-guidance experts.

@@ -33,6 +33,12 @@ export function InstitutionalFitWarning({
           </li>
         ))}
       </ul>
+      <p className="mt-4 border-t border-amber-200 pt-4 text-xs leading-5 text-amber-900">
+        These warnings compare the profile only with programs included in the
+        current SIBAU Degree Advisor knowledge base. They do not describe the
+        student as unsuitable and remain visible even when a program has a high
+        numerical score.
+      </p>
     </aside>
   );
 }

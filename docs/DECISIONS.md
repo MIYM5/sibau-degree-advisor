@@ -122,6 +122,14 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** Keep Version 1 at 50/30/20. Use 55% academic, 30% RIASEC, and 15% brief aptitude for Quick Guidance; use 50% academic, 35% RIASEC, and 15% brief aptitude for Detailed Guidance. Require strict mode, scoring-version, questionnaire-version, RIASEC-label, and aptitude-label agreement. Reject incomplete Version 2 evidence rather than using neutral fallbacks. Cap Quick confidence at Medium. Permit Detailed High confidence only under the documented complete-evidence and component-alignment thresholds, while always retaining the exact limited-aptitude warning.
 - **Consequences:** Version 2 uses a discriminated recommendation input and a strict version-2 session payload. Eligibility remains in the existing engine and runs first. RIASEC mappings, formulas, and confidence thresholds remain project-model assumptions requiring expert review; the brief aptitude result remains limited evidence and cannot guarantee success.
 
+## D-016 â€” Group and annotate results in the presentation layer
+
+- **Status:** Accepted for Version 2 presentation
+- **Date:** 2026-07-18
+- **Context:** A single five-card list does not clearly distinguish the strongest three eligible matches, two eligible alternatives, unranked evidence uncertainty, and current ineligibility. Small numerical gaps can also appear more decisive than they are.
+- **Decision:** Preserve engine scores, ranks, ordering, eligibility, and warnings. In a pure presentation adapter, show ranks 1â€“3 as Top Matches and ranks 4â€“5 as Alternative Options. Compare each eligible result from rank 2 onward only with the immediately preceding eligible result: below 3 is approximately equal, 3 to below 7 is moderately stronger, and 7 or more is clearly stronger. Show Version 2 RIASEC and brief aptitude evidence in a final profile/methodology section while keeping Version 1 displayable.
+- **Consequences:** The results page becomes easier to scan without changing recommendation behavior. Difference labels are guidance, not statistical proof. Verification-required and not-eligible programs remain unranked, engine warnings remain prominent, and the profile summary must retain RIASEC and five-task limitations.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?

@@ -12,6 +12,8 @@ The repository contains the approved documentation foundation, protected Excel k
 
 Version 2 evidence is now connected to mode-aware recommendations. Quick Guidance uses 55% academic suitability, 30% RIASEC alignment, and 15% brief aptitude. Detailed Guidance uses 50% academic suitability, 35% RIASEC alignment, and 15% brief aptitude. The five-task aptitude result remains labeled `Limited`; Quick confidence can never exceed Medium. Valid Version 1 sessions continue to use the original 50/30/20 model.
 
+The results page presents eligible ranks 1â€“3 as **Top Matches** and ranks 4â€“5 as **Alternative Options**, followed by separate unranked sections for admission verification and current ineligibility. Score-gap labels compare each eligible result only with the result immediately above it. These labels are display guidance, not statistical proof, and do not change scores or ranks.
+
 The Quick and Detailed interest activities and brief aptitude tasks are original project-designed content. They are not official O*NET Interest Profiler items or validated psychometric assessments and require pilot testing and expert review. The previous 18-item aptitude self-assessment and 22-item interest questionnaire remain only for compatible legacy sessions and historical tests.
 
 RIASEC program mappings, component weights, and confidence thresholds are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty, career-guidance, and educational-measurement experts.
@@ -108,6 +110,7 @@ npm run test:quick-interest
 npm run test:detailed-interest
 npm run test:brief-aptitude
 npm run test:recommendation-v2
+npm run test:recommendation-presentation
 ```
 
 ## License
