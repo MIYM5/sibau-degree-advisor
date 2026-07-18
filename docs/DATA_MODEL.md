@@ -65,7 +65,7 @@ The Excel workbook currently records `2026-07-17` as the program-row last-verifi
 
 ## Student profile
 
-The first MVP should keep this object in memory only. The `name` field is used for the current guided experience but must not be persisted or logged.
+The first MVP keeps this object only in React state and temporary browser `sessionStorage`. The `name` field is used for the current guided experience and must not be sent to a database, logged, or placed in long-term browser storage.
 
 | Field | Purpose |
 | --- | --- |
@@ -76,6 +76,34 @@ The first MVP should keep this object in memory only. The `name` field is used f
 | `aptitudeScores` | Self-assessment scores mapped to defined aptitude dimensions. |
 
 Do not persist names or include CNIC numbers, phone numbers, email addresses, roll numbers, or marks-sheet images in the first MVP.
+
+## Assessment session draft
+
+The editable draft supports route-to-route navigation within one browser-tab session. It contains:
+
+| Field | Purpose |
+| --- | --- |
+| `name` | Current student display name. |
+| `intermediateGroup` | Selected Intermediate group. |
+| `subjectRows` | Editable subject rows, including whether a row is optional. |
+| `interestResponses` | Responses keyed by the typed interest-question IDs. |
+| `aptitudeResponses` | Responses keyed by the typed aptitude-question IDs. |
+
+The draft is validated before it is restored. It is not a second domain model and is converted into the shared `StudentProfile` before recommendation logic runs.
+
+## Recommendation session payload
+
+After final Review confirmation, the app stores a versioned session payload containing:
+
+| Field | Purpose |
+| --- | --- |
+| `version` | Payload format version used to reject incompatible data. |
+| `createdAt` | ISO timestamp for the browser-session handoff. |
+| `assessmentDraft` | Editable values used by **Edit My Answers**. |
+| `studentProfile` | Validated, normalized profile passed to the recommendation engine. |
+| `recommendationResult` | Complete engine output for the results route. |
+
+The results route checks the payload structure, known program IDs, score ranges, eligibility/rank rules, and consistency between the draft and rebuilt profile. Invalid data produces the assessment empty state. `sessionStorage` is cleared by **Retake Assessment** and normally ends with the browser-tab session; it is not a database or a guarantee of confidentiality on a shared device.
 
 ## Subject mark
 

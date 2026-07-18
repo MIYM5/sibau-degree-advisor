@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import type {
   AptitudeQuestionId,
@@ -20,6 +21,14 @@ import {
   type SubjectMarkDraft,
   type SubjectMarksValidationResult,
 } from "@/lib/assessment-form";
+import { buildStudentProfile } from "@/lib/assessment-to-student-profile";
+import {
+  ASSESSMENT_DRAFT_SESSION_KEY,
+  RECOMMENDATION_SESSION_KEY,
+  createRecommendationSessionPayload,
+  parseAssessmentSessionDraft,
+  type AssessmentSessionDraft,
+} from "@/lib/assessment-session";
 import {
   calculateAptitudeAssessment,
   type AptitudeResponses,
@@ -28,8 +37,8 @@ import {
   calculateInterestAssessment,
   type InterestResponses,
 } from "@/lib/interest-assessment";
+import { generateRecommendations } from "@/lib/recommendation-engine";
 import type { IntermediateGroup } from "@/types/program";
-import type { StudentProfile } from "@/types/student";
 
 import { AptitudeStep } from "./aptitude-step";
 import { InterestStep } from "./interest-step";
@@ -43,6 +52,7 @@ const emptySubjectValidation: SubjectMarksValidationResult = {
 };
 
 export function AssessmentFlow() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [name, setName] = useState("");
   const [intermediateGroup, setIntermediateGroup] = useState<
@@ -63,16 +73,41 @@ export function AssessmentFlow() {
   const interestAssessment = calculateInterestAssessment(interestResponses);
   const [aptitudeResponses, setAptitudeResponses] = useState<AptitudeResponses>({});
   const aptitudeAssessment = calculateAptitudeAssessment(aptitudeResponses);
+  const [recommendationError, setRecommendationError] = useState<string>();
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const studentProfile: StudentProfile | null = intermediateGroup
+  const completedAssessment = intermediateGroup
     ? {
-        name: name.trim(),
+        name,
         intermediateGroup,
         subjectMarks: toSubjectMarks(subjectRows),
-        interestScores: interestAssessment.scores,
-        aptitudeScores: aptitudeAssessment.scores,
+        interestResponses,
+        aptitudeResponses,
       }
     : null;
+  const profileBuild = completedAssessment
+    ? buildStudentProfile(completedAssessment)
+    : null;
+  const studentProfile = profileBuild?.isValid ? profileBuild.profile : null;
+
+  useEffect(() => {
+    const savedDraft = parseAssessmentSessionDraft(
+      window.sessionStorage.getItem(ASSESSMENT_DRAFT_SESSION_KEY),
+    );
+    if (!savedDraft) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      setName(savedDraft.name);
+      setIntermediateGroup(savedDraft.intermediateGroup);
+      setInitializedGroup(savedDraft.intermediateGroup);
+      setSubjectRows(savedDraft.subjectRows);
+      setInterestResponses(savedDraft.interestResponses);
+      setAptitudeResponses(savedDraft.aptitudeResponses);
+      setCurrentStep(5);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   function continueFromBasicInformation() {
     const errors = validateBasicInformation(name, intermediateGroup);
@@ -144,6 +179,54 @@ export function AssessmentFlow() {
   function continueToReview() {
     if (!aptitudeAssessment.isValid) return;
     setCurrentStep(5);
+  }
+
+  function viewRecommendations() {
+    setRecommendationError(undefined);
+    if (!completedAssessment) {
+      setRecommendationError(
+        "The assessment is incomplete. Review the earlier steps and try again.",
+      );
+      return;
+    }
+
+    const buildResult = buildStudentProfile(completedAssessment);
+    if (!buildResult.isValid) {
+      setRecommendationError(buildResult.errors.join(" "));
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const assessmentDraft: AssessmentSessionDraft = {
+        name,
+        intermediateGroup: completedAssessment.intermediateGroup,
+        subjectRows,
+        interestResponses,
+        aptitudeResponses,
+      };
+      const recommendationResult = generateRecommendations(buildResult.profile);
+      const payload = createRecommendationSessionPayload(
+        assessmentDraft,
+        buildResult.profile,
+        recommendationResult,
+      );
+
+      window.sessionStorage.setItem(
+        ASSESSMENT_DRAFT_SESSION_KEY,
+        JSON.stringify(assessmentDraft),
+      );
+      window.sessionStorage.setItem(
+        RECOMMENDATION_SESSION_KEY,
+        JSON.stringify(payload),
+      );
+      router.push("/results");
+    } catch {
+      setIsGenerating(false);
+      setRecommendationError(
+        "Recommendations could not be prepared in this browser session. Please try again.",
+      );
+    }
   }
 
   return (
@@ -336,12 +419,23 @@ export function AssessmentFlow() {
                 </button>
                 <button
                   type="button"
-                  disabled
-                  className="inline-flex min-h-12 cursor-not-allowed items-center justify-center rounded-xl bg-slate-200 px-5 py-3 text-sm font-bold text-slate-500"
+                  onClick={viewRecommendations}
+                  disabled={isGenerating}
+                  className="primary-button disabled:cursor-wait disabled:bg-slate-400"
                 >
-                  Recommendations coming next
+                  {isGenerating
+                    ? "Preparing recommendations…"
+                    : "View My Recommendations"}
                 </button>
               </div>
+              {recommendationError && (
+                <p
+                  className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800"
+                  role="alert"
+                >
+                  {recommendationError}
+                </p>
+              )}
             </div>
           )}
         </div>

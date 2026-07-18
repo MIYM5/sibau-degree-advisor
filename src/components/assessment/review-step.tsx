@@ -33,7 +33,7 @@ export function ReviewStep({ studentProfile }: ReviewStepProps) {
       </h1>
       <p className="mt-3 max-w-2xl leading-7 text-slate-600">
         Check your academic information, interests, and aptitude self-assessment
-        before recommendations are added in a future step.
+        before generating your recommendations.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -198,10 +198,13 @@ export function ReviewStep({ studentProfile }: ReviewStepProps) {
       </div>
 
       <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-        <p className="font-bold text-amber-950">Your information stays on this page</p>
+        <p className="font-bold text-amber-950">
+          Your information stays in this browser-tab session
+        </p>
         <p className="mt-2 text-sm leading-6 text-amber-900">
-          This MVP keeps assessment details only in temporary React state. It
-          does not save them to a database or browser storage.
+          This MVP temporarily uses session storage so you can view results and
+          edit your answers. It does not save them to a database or long-term
+          browser storage.
         </p>
       </div>
     </section>

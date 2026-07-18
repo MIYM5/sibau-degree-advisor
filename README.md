@@ -6,7 +6,7 @@ SIBAU Degree Advisor is an independent web application project that will help pr
 
 ## Current status
 
-The repository contains the approved documentation foundation, the Excel knowledge base, typed program data, validated eligibility and recommendation engines, and a responsive frontend flow. The landing page, academic information steps, 22-question interest assessment, 18-question aptitude self-assessment, and combined review are available; recommendation-result screens remain future work.
+The repository contains the approved documentation foundation, the Excel knowledge base, typed program data, validated eligibility and recommendation engines, and a responsive end-to-end frontend flow. Students can complete academic, interest, and aptitude steps, review their answers, and view ranked eligible recommendations alongside verification-required and not-eligible programs. Results also include explanations, confidence, career directions, source notes, and institutional-fit warnings.
 
 ## MVP principles
 
@@ -87,11 +87,14 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. The main page is located at `src/app/page.tsx`.
 
+Assessment answers and generated recommendations are kept in `sessionStorage` only so the results page and the **Edit My Answers** action work in the same browser tab. **Retake Assessment** clears this session data. The MVP does not save student profiles to a database or long-term browser storage.
+
 Run project checks:
 
 ```bash
 npm run lint
 npm run build
+npm run test:integration
 ```
 
 ## License

@@ -2,9 +2,7 @@
 
 ## Overview
 
-The first MVP of SIBAU Degree Advisor should be a single Next.js application with local, version-controlled program data. The design keeps official evidence, eligibility decisions, and suitability scoring separate so each can be reviewed and tested independently.
-
-No Next.js application exists yet. This document describes the intended structure for the next approved phase.
+SIBAU Degree Advisor is a single Next.js application with local, version-controlled program data. The design keeps official evidence, eligibility decisions, and suitability scoring separate so each can be reviewed and tested independently.
 
 ## Planned layers
 
@@ -22,7 +20,7 @@ Presentation components should display decisions, not contain admission rules.
 
 ### 2. Application layer
 
-Small workflow functions will coordinate:
+Small workflow functions coordinate:
 
 - form validation;
 - normalized student-profile creation;
@@ -56,33 +54,42 @@ For the first MVP:
 
 Supabase is not part of this phase.
 
-## Suggested future folder structure
+## Current folder structure
 
 ```text
-app/                    # App Router routes and layouts
-components/             # Reusable user-interface components
-lib/
-  domain/               # Eligibility and scoring logic
-  data/                 # Loaders and validation
-  validation/           # Student-input schemas
-data/                   # Protected workbook and derived reviewed data
+src/app/                # App Router routes and layouts
+src/components/         # Reusable user-interface components
+src/data/               # Typed questions and reviewed program data
+src/lib/                # Validation, eligibility, scoring, and workflows
+src/types/              # Shared domain types
+data/                   # Protected Excel knowledge base
 docs/                   # Project documentation
-tests/                  # Unit and integration tests
-scripts/                # Repeatable data conversion and validation
+scripts/                # Development validation and focused tests
 ```
-
-This structure is a recommendation-model assumption and implementation plan, not a current repository claim.
 
 ## Main request flow
 
-1. The student submits group, marks, interests, and aptitude answers.
-2. Input validation creates a normalized in-memory student profile.
-3. The eligibility engine evaluates every program using hard rules and evidence status.
-4. Suitability components are calculated without changing eligibility.
-5. The recommendation engine ranks only eligible programs.
-6. The interface shows explanations, confidence, source links, verification dates, and disclaimers.
+1. The student enters basic information and subject marks, then completes the interest and aptitude self-assessments.
+2. The Review step keeps the editable answers in React state until the student selects **View My Recommendations**.
+3. `assessment-to-student-profile.ts` validates the complete assessment, calculates the dimension scores, and creates the existing `StudentProfile` shape.
+4. The recommendation engine checks eligibility first, calculates suitability without changing eligibility, and ranks only eligible programs.
+5. A versioned payload containing the editable assessment draft, normalized profile, and generated result is written to browser `sessionStorage`.
+6. `/results` validates that payload before displaying summaries, ranked eligible programs, unranked verification-required and not-eligible programs, explanations, source notes, and warnings.
 
-The MVP should process this in the browser or request memory and should not persist student profiles.
+The engine runs only after final Review confirmation. The interface does not copy eligibility or scoring rules into React components.
+
+## Browser-session state transfer
+
+The current MVP uses `sessionStorage` because `/assessment` and `/results` are separate routes and there is no database. It is a temporary route-to-route handoff, not durable profile storage.
+
+- Data is limited to the current browser tab session and is not placed in `localStorage`.
+- The stored payload has an explicit version and is checked at runtime before use.
+- The stored profile is rebuilt from the draft and compared with the stored profile, so inconsistent or malformed data is rejected.
+- **Edit My Answers** returns to the Review step with the current draft restored.
+- **Retake Assessment** removes both the draft and result payload before starting again.
+- Opening `/results` without valid session data shows a neutral empty state.
+
+This is client-side validation for a guidance tool, not a security boundary. A future server-backed design must validate all submitted data again and document retention, consent, and access controls before storing student information.
 
 ## Key boundaries
 
