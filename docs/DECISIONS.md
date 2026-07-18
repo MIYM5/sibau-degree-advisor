@@ -82,12 +82,22 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** Calculate suitability only after eligibility. Omit missing or invalid weighted inputs and re-normalize across valid evidence. When a component has no valid weighted evidence, use a neutral 50-point placeholder with zero coverage rather than treating missing evidence as zero. Combine evidence coverage using 50/30/20. Use a 12.5-point component-alignment threshold, a 65% minimum evidence threshold, deterministic program-name/ID tie-breaking, the documented recommendation bands, and the transparent health, weak-top-score, insufficient-evidence, and no-eligible-program warning triggers in `SCORING_MODEL.md`. A flat interest-and-aptitude profile is Low confidence under the documented response-range thresholds.
 - **Consequences:** Scores stay within 0–100 and remain explainable without creating eligibility. Verification-required and not-eligible programs can still show suitability for guidance but remain unranked and outside the eligible top five. These thresholds are recommendation-model assumptions, not official university rules or validated psychometric standards.
 
+## D-011 — Add reviewed-before-use RIASEC infrastructure for Version 2
+
+- **Status:** Accepted as inactive Version 2 infrastructure; expert review and scoring integration remain pending
+- **Date:** 2026-07-18
+- **Context:** Detailed Guidance is planned to use 30 RIASEC interest items. The project needs stable dimensions and explicit program mappings before questionnaire and scoring work can be reviewed independently.
+- **Decision:** Define the stable R-I-A-S-E-C order, complete six-dimension profiles, deterministic top-three codes, and one explicit 100-point mapping for every current program. Keep these structures separate from the active Version 1 interest model and recommendation engine.
+- **Consequences:** RIASEC data can be validated and reviewed without changing current results. The mappings are project assumptions, not official SIBAU weightages, and were not supplied or endorsed by O*NET. Faculty and career-guidance experts must review them before a later approved task connects them to student responses or recommendations.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?
 - How should the BS Mathematics source conflict be resolved for production?
 - Is the Associate Degree in Physical Education & Sports Sciences inside the final undergraduate recommendation scope?
 - Which interest and aptitude question scales will be used?
+- Which experts will review the Version 2 RIASEC program mappings, and what evidence will support revisions?
+- How should reviewed Quick and Detailed RIASEC evidence map into the active interest suitability component?
 - What test framework and data-validation library should be selected during Next.js setup?
 - What license should the repository use?
 - When, if ever, does the product need persistent data, authentication, or Supabase?

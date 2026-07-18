@@ -59,6 +59,14 @@ The MVP interest assessment uses two statements for each of the 11 interest dime
 
 Dimension evidence coverage is the number of valid responses divided by the two expected responses. The assessment flow requires all 22 responses before review. These questions and mappings are recommendation-model assumptions, not an official or psychometric assessment.
 
+### Version 2 RIASEC infrastructure
+
+Version 2 defines Realistic, Investigative, Artistic, Social, Enterprising, and Conventional dimensions plus program-specific RIASEC mappings. Every program mapping totals 100 and uses a stable R-I-A-S-E-C dimension order.
+
+The RIASEC mappings are project-model assumptions awaiting review by faculty and career-guidance experts. They are not official SIBAU weightages and were not supplied or endorsed by O*NET.
+
+No active scoring behavior changes in this stage. The Version 1 interest questions, 11 interest dimensions, program interest weights, interest-scoring function, 50/30/20 final formula, rankings, confidence, and results remain active. RIASEC scores must not influence recommendations until a separately approved task defines reviewed questions, evidence handling, scoring integration, and regression tests.
+
 ### Aptitude suitability
 
 Convert self-assessment responses to a consistent 0–100 scale, then calculate:

@@ -124,6 +124,25 @@ The mode is stored separately from the assessment draft and recommendation resul
 
 The dedicated key is `sibau-degree-advisor:assessment-mode:v1`. Missing mode data is allowed when an otherwise valid Version 1 assessment draft is present. Malformed data, unknown modes, and unsupported versions require a new selection. This separation keeps the existing Version 1 session payloads backward compatible.
 
+## RIASEC interest model
+
+Version 2 infrastructure defines six stable RIASEC dimension IDs in this order:
+
+| Stable ID | Label | Code |
+| --- | --- | --- |
+| `realistic` | Realistic | R |
+| `investigative` | Investigative | I |
+| `artistic` | Artistic | A |
+| `social` | Social | S |
+| `enterprising` | Enterprising | E |
+| `conventional` | Conventional | C |
+
+`RiasecScores` requires a 0–100 score for every dimension. A `RiasecProfile` contains the six scores, an ordered top three, a three-letter Holland-style code, user-friendly labels, and an evidence label. Equal scores use the stable R-I-A-S-E-C order, making results deterministic. For example, equal Investigative and Artistic scores place Investigative first because I precedes A in the stable order.
+
+`ProgramRiasecWeights` links one existing `ProgramId` to exactly six weights totaling 100. All 14 current programs have one explicit mapping. Validation rejects unknown or duplicate programs, missing or extra dimensions, out-of-range values, incorrect totals, and changes to the stable dimension order.
+
+These mappings are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty and career-guidance experts. They are not connected to `StudentProfile`, active interest scoring, or recommendation results yet.
+
 ## Recommendation session payload
 
 After final Review confirmation, the app stores a versioned session payload containing:
