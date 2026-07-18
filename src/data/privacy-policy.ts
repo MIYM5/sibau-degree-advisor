@@ -63,7 +63,8 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     title: "5. Optional future research use",
     paragraphs: [
       "A later, separately approved project stage may propose storing de-identified assessment responses, recommendation results, and feedback for academic research, reports, presentations, or publications. No applicant assessment data is permanently stored for research in the current version.",
-      "The research-consent checkbox records future-ready metadata only. It does not send data to a database and does not mean that research collection has begun or received ethics approval.",
+      "The research-consent checkbox records an expression of interest in temporary browser session data only. Consent alone does not enable storage. A separate fail-closed governance gate must report the required adult or minor readiness before any future database stage may consider a participant eligible.",
+      "Administrative environment configuration does not itself prove ethics approval, legal authority, or completion of participant consent. It must be backed by authentic documentation and reviewed procedures.",
     ],
   },
   {
@@ -79,6 +80,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     paragraphs: [
       "Students under 18 may use the current educational guidance flow, but their records are not eligible for future research storage under this version. A minor's checkbox alone is not treated as sufficient research consent.",
       "Before any minor-participant research begins, an approved procedure must define guardian permission, participant assent, institutional approval, safeguarding, withdrawal, and age-appropriate information. No guardian identity or CNIC is collected now.",
+      "Even when administrative configuration reports minor research readiness, configuration alone is not participant-specific evidence that guardian permission and minor assent were completed.",
     ],
   },
   {
@@ -121,7 +123,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     id: "retention",
     title: "13. Data retention placeholder",
     paragraphs: [
-      "Current assessment data is retained only in temporary tab-scoped sessionStorage and may disappear when the tab closes. Permanent research retention periods have not been approved or defined. They must be documented before any persistent collection begins.",
+      "Current assessment data is retained only in temporary tab-scoped sessionStorage and may disappear when the tab closes. A permanent research retention period must be positively configured and supported by the approved research documents before the governance gate can report readiness.",
     ],
   },
   {
@@ -135,7 +137,7 @@ export const privacyPolicySections: readonly PrivacyPolicySection[] = [
     id: "contact-ethics",
     title: "15. Contact and ethics-approval placeholders",
     paragraphs: [
-      "Project contact, privacy contact, research-lead details, ethics-committee details, complaint routes, and jurisdiction-specific legal information are not yet finalized. They must be added before public research recruitment or permanent collection.",
+      "Project contact, privacy contact, research-lead details, ethics-committee details, approval reference, withdrawal route, and jurisdiction-specific legal information must be configured and backed by reviewed documentation before public research recruitment or permanent collection. Unresolved public fields are shown as Not yet configured on the Research Information page.",
       "This notice does not claim legal approval, ethics approval, institutional endorsement, or authority from Sukkur IBA University. A separate institutional ethics and legal review remains required.",
     ],
   },

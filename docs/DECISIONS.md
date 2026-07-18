@@ -146,6 +146,14 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** Route new Version 2 users from mode selection to `/consent`. Require age group and operational consent for temporary assessment processing. Record optional research, follow-up contact, and future analytics choices independently and never preselect them. Store only a strict versioned consent record under `sibau-degree-advisor:consent:v1`. Derive research-storage eligibility without sending data anywhere. Treat every minor as ineligible until a real approved guardian and institutional process exists. Preserve valid Version 1 draft compatibility. Preserve operational consent during Retake Assessment in the same tab; selecting a mode again explicitly resets consent and assessment progress.
 - **Consequences:** Operational consent cannot be confused with research participation, and research refusal does not block guidance. Consent, draft, results, and feedback remain separate. The essential-storage notice is informational and has its own dismissal key. No cookies, analytics, trackers, contact details, or permanent storage are added. Policy-owner, legal basis, contacts, retention, withdrawal, ethics approval, and minor procedures remain unresolved placeholders.
 
+## D-019 - Add a fail-closed research-governance gate before persistence
+
+- **Status:** Accepted as production-safety architecture; permanent research collection remains unapproved and unimplemented
+- **Date:** 2026-07-18
+- **Context:** The browser-only consent record can express a participant's voluntary preference, but consent alone cannot establish ethics approval, retention, contacts, withdrawal, minor procedures, or authority to create a permanent research record.
+- **Decision:** Add a central server-only validator whose absent, false, incomplete, inconsistent, or malformed configuration resolves to `guidance_only`. Adult readiness requires every documented adult administrative field. Minor readiness additionally requires the minor flag and guardian-consent and minor-assent procedure references. Preserve consent schema v1; treat its `researchStorageEligibility` field as preliminary metadata, and require any future database stage to combine current consent and age with the governance gate immediately before a write.
+- **Consequences:** Educational guidance remains fully available in every governance status. No database, persistence operation, analytics, cookie, tracker, package, or external service is added. Public pages receive only safe administrative metadata. Environment configuration records an administrator assertion and is not proof of legal or ethics approval. Minor-ready configuration is necessary but not participant-specific proof that guardian permission and assent occurred.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?

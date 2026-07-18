@@ -7,12 +7,15 @@ import {
   privacyPolicySections,
 } from "@/data/privacy-policy";
 import { SiteHeader } from "@/components/site-header";
+import { ResearchStatusNotice } from "@/components/consent/research-status-notice";
 
 export const metadata: Metadata = {
   title: "Privacy and Research Data Notice | SIBAU Degree Advisor",
   description:
     "How SIBAU Degree Advisor temporarily processes assessment information, consent choices, results, and optional feedback.",
 };
+
+export const dynamic = "force-dynamic";
 
 export default function PrivacyPage() {
   return (
@@ -35,6 +38,7 @@ export default function PrivacyPage() {
       </header>
 
       <div className="mx-auto max-w-4xl px-5 py-10 sm:px-8 sm:py-14">
+        <ResearchStatusNotice />
         <aside className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950">
           No applicant assessment data is permanently stored yet. Current data is
           held temporarily in sessionStorage in the current browser tab. This
@@ -62,7 +66,10 @@ export default function PrivacyPage() {
           ))}
         </div>
 
-        <div className="mt-12 border-t border-slate-200 pt-8">
+        <div className="mt-12 flex flex-col gap-3 border-t border-slate-200 pt-8 sm:flex-row">
+          <Link href="/research-information" className="secondary-button text-center">
+            Research Information
+          </Link>
           <Link href="/assessment/mode" className="primary-button">
             Choose Assessment Mode
           </Link>

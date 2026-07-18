@@ -206,6 +206,11 @@ export function ConsentForm() {
           Privacy and Research Data Notice
         </Link>
         . Current policy: {PRIVACY_POLICY_VERSION}; consent text: {CONSENT_TEXT_VERSION}.
+        {" "}
+        <Link href="/research-information" className="font-bold underline decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2">
+          Check the current research-data status
+        </Link>
+        .
       </p>
 
       <form onSubmit={submitConsent} noValidate className="mt-8 space-y-8">

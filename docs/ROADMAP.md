@@ -135,6 +135,20 @@ Status: **Complete for browser-only Version 2 architecture; legal and ethics rev
 
 Research-storage eligibility is future-ready metadata only. Before permanent research collection, the project must identify the formal operator, obtain appropriate legal and institutional ethics review, approve minor and guardian procedures, and define contacts, retention, access, deletion, withdrawal, sharing, incident response, and de-identification limits.
 
+### Stage 10 - Research-governance configuration and persistence safety gate
+
+Status: **Complete as a fail-closed administrative gate; research persistence remains unapproved**
+
+- Default local, test, and production status to `guidance_only` when configuration is absent or invalid.
+- Require all adult governance metadata before reporting adult readiness.
+- Require adult readiness plus guardian-consent and minor-assent procedure references before reporting minor readiness.
+- Keep operational guidance available regardless of research readiness.
+- Publish only non-secret administrative status metadata and label missing fields `Not yet configured`.
+- Preserve consent schema v1 while defining the authoritative future participant-eligibility gate.
+- Add no database, permanent writes, analytics, cookies, tracking, external service, or package.
+
+Configuration does not prove ethics or legal approval, and consent alone is insufficient for storage. Any later database implementation must validate governance and participant eligibility on the server immediately before each permanent write. A minor-ready system status still requires evidence that the approved participant-specific guardian-permission and assent procedure was completed.
+
 ### Planned later stages
 
 - Review the RIASEC program mappings with faculty and career-guidance experts.

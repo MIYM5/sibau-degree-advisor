@@ -129,6 +129,14 @@ Adults who grant optional research consent receive future-ready `eligible` metad
 
 The compact essential-storage notice is informational, not a cookie-consent banner. Its dismissal uses `sibau-degree-advisor:essential-storage-notice:v1`, separate from every consent category. No analytics or non-essential cookies are loaded.
 
+### Research-governance gate
+
+`research-governance.ts` is a pure, server-side configuration boundary for a possible later database stage. Missing, false, inconsistent, or malformed configuration produces `guidance_only`; the educational assessment remains available. Complete adult metadata produces `adult_research_ready`. Minor readiness additionally requires administrator-configured references for an approved guardian-consent procedure and minor-assent procedure.
+
+The consent record remains schema version 1 for browser-session backward compatibility. Its existing `researchStorageEligibility` value is preliminary participant metadata only. The authoritative future storage decision must combine validated participant consent and age with a fresh server-side `determineResearchParticipantEligibility()` result. A database stage must call this gate directly before every permanent write and must independently verify real ethics documentation and participant-procedure evidence.
+
+Only `toPublicResearchGovernanceStatus()` output may cross into public rendering. Raw environment input, validation issues, and guardian/assent procedure references stay server-side. The current implementation adds no database client, persistence function, network request, analytics, cookie, tracker, or external service.
+
 ### Post-results feedback record
 
 Quick and Detailed results use another dedicated session record for optional feedback:

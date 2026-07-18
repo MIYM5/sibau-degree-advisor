@@ -34,6 +34,14 @@ Minor assessment data is not eligible for research storage until a separately ap
 
 Before permanent research collection, the project must complete legal and institutional ethics review, identify the responsible operator and contacts, define lawful purpose, retention, access, deletion, withdrawal, breach response, sharing, de-identification limits, and protections for minors. Current consent metadata must not be treated as permission to begin database collection.
 
+## Research-governance safety gate
+
+Research collection defaults to disabled in local development, tests, and production when configuration is absent, false, incomplete, inconsistent, or malformed. The server-only validator reports `guidance_only`, `adult_research_ready`, or `minor_research_ready`; it performs no network or storage operation. Only a safe subset of non-secret administrative metadata is rendered publicly.
+
+Adult readiness requires the exact collection flag plus configured ethics reference, committee, responsible researcher, research and privacy contacts, positive retention period, and withdrawal URL. Minor readiness additionally requires the exact minor-approval flag and references for approved guardian-consent and minor-assent procedures. Consent and configuration are independent controls: neither is sufficient alone. Configuration records an administrator assertion and must not be treated as evidence that approval is authentic or a participant procedure was completed.
+
+Any future database write path must call the central governance and participant-eligibility gate on the server immediately before storage, validate submitted data again, and fail closed. It must not rely on the legacy consent record's preliminary `researchStorageEligibility` field by itself. No database, permanent storage, analytics, cookies, or tracking was introduced with this gate.
+
 ## Scope status
 
 No released versions are currently supported. This policy will be expanded before public deployment to cover dependency updates, access control, data retention, backups, incident response, and responsible disclosure timelines.

@@ -143,7 +143,7 @@ New Version 2 sessions store privacy and consent separately under `sibau-degree-
 | `followUpContactConsent` | Independent choice only; no contact details are collected. |
 | `analyticsConsent` | Independent future-ready choice; no analytics are loaded. |
 | `guardianConsentStatus` | `not_applicable`, `required_not_collected`, or `future_approved_process_required`. |
-| `researchStorageEligibility` | Derived future-ready metadata; it does not store assessment data. |
+| `researchStorageEligibility` | Legacy preliminary consent-and-age metadata; it does not store assessment data and is not authoritative without the server governance gate. |
 | `privacyPolicyVersion` | Exact notice version displayed to the participant. |
 | `consentTextVersion` | Exact consent wording version displayed. |
 | `consentTimestamp` | Strict ISO timestamp recorded in the current tab. |
@@ -158,6 +158,14 @@ Research-storage eligibility values are:
 Age 16-17 maps to `future_approved_process_required`. Under 16 maps to `required_not_collected`. Adults map to `not_applicable`. The runtime validator rejects inconsistent combinations, unknown fields, old policy text, malformed timestamps, and minors marked research-eligible.
 
 The consent payload excludes student name, email, phone, CNIC, address, subject marks, interest responses, aptitude responses, recommendation results, health information, religion, political information, and precise location. No permanent data store exists in this stage.
+
+### Research-governance configuration
+
+`ResearchGovernanceConfig` normalizes server environment input into booleans, nullable administrative text, a positive whole-number retention period, and procedure references. `ResearchGovernanceValidationResult` returns the normalized configuration, machine-readable issues, adult/minor validity flags, and one status: `guidance_only`, `adult_research_ready`, or `minor_research_ready`.
+
+`ResearchParticipantEligibility` is the authoritative future gate output: `guidance_only`, `eligible_adult_with_consent`, `ineligible_no_research_consent`, `ineligible_minor_process_not_approved`, or `ineligible_invalid_governance_configuration`. An adult needs both voluntary research consent and adult-ready governance. Minor-ready configuration is necessary but not sufficient: the current participant record contains no proof that the approved guardian-permission and minor-assent procedure was completed, so current minor records remain guidance-only.
+
+The public status view deliberately omits raw configuration, validation issues, and guardian/assent procedure references. No consent or governance object contains assessment answers, and no object is persisted permanently in this stage. The consent schema remains version 1; no migration is required.
 
 ## RIASEC interest model
 

@@ -18,6 +18,8 @@ Quick and Detailed results now end with optional post-results feedback about per
 
 New Version 2 assessments now pass through a privacy and informed-consent screen after mode selection. The student selects an age group and grants required operational consent before assessment processing begins. Research, follow-up contact, and future analytics choices are optional, independent, and never preselected. Minor records remain ineligible for research storage until a real approved guardian-consent and institutional-review process exists. These choices are temporary, future-ready metadata only; no permanent applicant or research database has been added.
 
+A server-only research-governance gate now defaults to `guidance_only`. It can report `adult_research_ready` only when every required adult administrative field is valid, and `minor_research_ready` only when the adult gate plus approved guardian-consent and minor-assent procedure references are configured. Configuration is not proof of legal or ethics approval, consent alone never enables storage, and no database or permanent write operation exists. Version 1 remains preserved on `main` and tag `v1.0.0`.
+
 The Quick and Detailed interest activities and brief aptitude tasks are original project-designed content. They are not official O*NET Interest Profiler items or validated psychometric assessments and require pilot testing and expert review. The previous 18-item aptitude self-assessment and 22-item interest questionnaire remain only for compatible legacy sessions and historical tests.
 
 RIASEC program mappings, component weights, and confidence thresholds are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty, career-guidance, and educational-measurement experts.
@@ -101,6 +103,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. Select **Start Assessment** to open `/assessment/mode`, choose Quick or Detailed Guidance, review privacy and consent at `/consent`, and then continue to `/assessment`. The full notice is available at `/privacy`.
 
+Current research status and non-secret administrative metadata are available at `/research-information`. With the provided `.env.example` defaults, research collection remains disabled while the complete educational guidance flow continues to work.
+
 The selected mode, consent record, assessment draft, recommendations, optional feedback, and essential-storage-notice dismissal each use separate versioned `sessionStorage` keys. Records are temporary and scoped to the current browser tab. **Retake Assessment** clears the assessment, results, and current feedback while preserving the selected mode and valid operational consent for the same tab. Selecting a mode again resets consent and assessment progress so new Version 2 work cannot bypass the privacy screen. The MVP does not save student profiles, consent records, results, or feedback to a permanent database.
 
 Run project checks:
@@ -117,6 +121,7 @@ npm run test:recommendation-v2
 npm run test:recommendation-presentation
 npm run test:feedback
 npm run test:consent
+npm run test:research-governance
 ```
 
 ## License
