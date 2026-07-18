@@ -6,7 +6,7 @@ SIBAU Degree Advisor is an independent web application project that will help pr
 
 ## Current status
 
-The repository contains the approved documentation foundation, the Excel knowledge base, an initialized Next.js application, typed program data, and validated eligibility and recommendation engines. The browser UI is still the minimal starter and does not expose the advisor flow yet.
+The repository contains the approved documentation foundation, the Excel knowledge base, typed program data, validated eligibility and recommendation engines, and the first responsive frontend flow. The landing page and academic assessment steps are available; interest, aptitude, and recommendation-result screens remain future work.
 
 ## MVP principles
 

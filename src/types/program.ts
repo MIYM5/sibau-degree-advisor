@@ -36,6 +36,7 @@ export type IntermediateGroup =
   | "ICS"
   | "Commerce"
   | "Arts/Humanities"
+  | "General Science"
   | "Other";
 
 export type RequiredGroup =
