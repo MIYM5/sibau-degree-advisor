@@ -57,7 +57,7 @@ For the first MVP:
 - the web app reads the validated artifact without writing back to the workbook;
 - source URL, last-verified date, applicable admission year, and evidence status travel with every program rule.
 
-Supabase is not part of this phase.
+Supabase research infrastructure is prepared but disabled and disconnected from the assessment UI. The web app still reads program data locally. Any research write must pass a server-only governance, consent, participant-eligibility, and payload-validation boundary before a single transactional database function can run.
 
 ## Current folder structure
 
@@ -87,6 +87,7 @@ scripts/                # Development validation and focused tests
 11. `/results` validates that payload, then `recommendation-presentation.ts` groups existing eligible ranks 1â€“3 as Top Matches and ranks 4â€“5 as Alternative Options. It compares adjacent eligible scores for display without sorting or recalculating them.
 12. The page shows engine warnings before recommendation cards, keeps verification-required and not-eligible programs unranked, and finishes with a mode-aware student-profile and methodology summary. Version 1 payloads use a compatible legacy summary.
 13. After Quick or Detailed recommendations are visible, the student may submit or skip a short feedback form. Feedback uses its own validator and session key and never calls eligibility, scoring, ranking, or confidence logic.
+14. The current UI stops here. It does not call `/api/research-submissions`; the prepared research database receives no assessment records from this flow.
 
 The engine runs only after final Review confirmation. The interface does not copy eligibility or scoring rules into React components.
 
@@ -102,7 +103,7 @@ Rank 1 has no comparison label. Full precision remains in the engine result; the
 
 ## Browser-session state transfer
 
-The current MVP uses `sessionStorage` because `/assessment` and `/results` are separate routes and there is no database. It is a temporary route-to-route handoff, not durable profile storage.
+The current MVP uses `sessionStorage` because `/assessment` and `/results` remain disconnected from the prepared research database. It is a temporary route-to-route handoff, not durable profile storage.
 
 - Data is limited to the current browser tab session and is not placed in `localStorage`.
 - The stored payload has an explicit version and is checked at runtime before use.
@@ -135,7 +136,17 @@ The compact essential-storage notice is informational, not a cookie-consent bann
 
 The consent record remains schema version 1 for browser-session backward compatibility. Its existing `researchStorageEligibility` value is preliminary participant metadata only. The authoritative future storage decision must combine validated participant consent and age with a fresh server-side `determineResearchParticipantEligibility()` result. A database stage must call this gate directly before every permanent write and must independently verify real ethics documentation and participant-procedure evidence.
 
-Only `toPublicResearchGovernanceStatus()` output may cross into public rendering. Raw environment input, validation issues, and guardian/assent procedure references stay server-side. The current implementation adds no database client, persistence function, network request, analytics, cookie, tracker, or external service.
+Only `toPublicResearchGovernanceStatus()` output may cross into public rendering. Raw environment input, validation issues, and guardian/assent procedure references stay server-side. The governance module itself performs no database or network work; the separately prepared API must call it at request time before accessing Supabase.
+
+### Supabase research submission boundary
+
+`src/lib/supabase/server.ts` is marked `server-only` and creates an official Supabase client only from a server environment. It uses the service-role credential with session persistence and token refresh disabled. No client component, shared browser module, or UI flow imports it. The anonymous key is not used for research-table access.
+
+`POST /api/research-submissions` is the only prepared application write boundary. It rejects non-JSON and oversized requests, re-evaluates governance, checks database configuration, validates consent and participant eligibility, and runs strict Version 1 research-payload validation. It recalculates marks, overall percentage, RIASEC results, aptitude correctness/results, and all 14 recommendation results using current server code. It returns generic errors and never logs complete payloads or sensitive response data. No `GET` handler exists.
+
+The route calls `submit_research_assessment(jsonb)`, a service-role-only `SECURITY DEFINER` PostgreSQL function. The function writes participant, consent, assessment, raw-response, derived-result, recommendation, and optional feedback rows in one transaction. Unique submission IDs prevent replay and partial failures roll back. The UI does not call this route yet.
+
+Every research table has RLS enabled with no permissive anonymous or authenticated policy. The service role bypasses RLS, so exposure of that key or broadening the server route would be critical. `participant_contacts` remains isolated and unused.
 
 ### Post-results feedback record
 
@@ -210,4 +221,4 @@ Version 1 payloads and earlier mode-specific drafts without `briefAptitudeRespon
 
 ## Future architecture decisions
 
-Before adding Supabase, authentication, deployment analytics, or saved profiles, record the purpose, data involved, retention period, access controls, costs, alternatives, and rollback plan in `DECISIONS.md`.
+Before connecting Supabase to the UI, or adding authentication, deployment analytics, or saved profiles, record the purpose, data involved, retention period, access controls, costs, alternatives, and rollback plan in `DECISIONS.md`.

@@ -16,9 +16,11 @@ The results page presents eligible ranks 1â€“3 as **Top Matches** and ranks
 
 Quick and Detailed results now end with optional post-results feedback about perceived interest alignment, personal relevance, and explanation usefulness. Feedback is validated and stored only in a dedicated, versioned `sessionStorage` record. It does not recalculate or change recommendations, and it excludes the student name, contact information, exact marks, and raw assessment responses. This temporary browser storage is not a research database.
 
-New Version 2 assessments now pass through a privacy and informed-consent screen after mode selection. The student selects an age group and grants required operational consent before assessment processing begins. Research, follow-up contact, and future analytics choices are optional, independent, and never preselected. Minor records remain ineligible for research storage until a real approved guardian-consent and institutional-review process exists. These choices are temporary, future-ready metadata only; no permanent applicant or research database has been added.
+New Version 2 assessments now pass through a privacy and informed-consent screen after mode selection. The student selects an age group and grants required operational consent before assessment processing begins. Research, follow-up contact, and future analytics choices are optional, independent, and never preselected. Minor records remain ineligible for research storage until a real approved guardian-consent and institutional-review process exists. These choices remain temporary browser metadata, and the UI creates no permanent research records.
 
-A server-only research-governance gate now defaults to `guidance_only`. It can report `adult_research_ready` only when every required adult administrative field is valid, and `minor_research_ready` only when the adult gate plus approved guardian-consent and minor-assent procedure references are configured. Configuration is not proof of legal or ethics approval, consent alone never enables storage, and no database or permanent write operation exists. Version 1 remains preserved on `main` and tag `v1.0.0`.
+A server-only research-governance gate now defaults to `guidance_only`. It can report `adult_research_ready` only when every required adult administrative field is valid, and `minor_research_ready` only when the adult gate plus approved guardian-consent and minor-assent procedure references are configured. Configuration is not proof of legal or ethics approval, and consent alone never enables storage. Version 1 remains preserved on `main` and tag `v1.0.0`.
+
+Version 2 now includes a disabled-by-default Supabase research schema, a service-role-only server client, a strict Version 1 research-submission validator, and a POST-only transactional API foundation. The assessment and results UI does not call this API, so completed assessments are not submitted or permanently stored. Governance, participant eligibility, operational consent, voluntary research consent, database configuration, and server recalculation must all pass independently before the route can attempt a write.
 
 The Quick and Detailed interest activities and brief aptitude tasks are original project-designed content. They are not official O*NET Interest Profiler items or validated psychometric assessments and require pilot testing and expert review. The previous 18-item aptitude self-assessment and 22-item interest questionnaire remain only for compatible legacy sessions and historical tests.
 
@@ -64,10 +66,10 @@ The workbook stores program information, source URLs, last-verified dates, model
 - App Router
 - npm
 - Git and GitHub
-- Supabase later, only after a separate design decision
+- Supabase JavaScript client for the approved, disabled research-infrastructure boundary
 - Vercel later, only when deployment work begins
 
-The current scope does not include Supabase, authentication, an external AI API, OCR, or paid services.
+The current scope does not include authentication, an external AI API, OCR, or paid services. Supabase infrastructure exists only for the approved server-side research foundation and is not connected to the assessment UI.
 
 ## Documentation
 
@@ -105,7 +107,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. Select **St
 
 Current research status and non-secret administrative metadata are available at `/research-information`. With the provided `.env.example` defaults, research collection remains disabled while the complete educational guidance flow continues to work.
 
-The selected mode, consent record, assessment draft, recommendations, optional feedback, and essential-storage-notice dismissal each use separate versioned `sessionStorage` keys. Records are temporary and scoped to the current browser tab. **Retake Assessment** clears the assessment, results, and current feedback while preserving the selected mode and valid operational consent for the same tab. Selecting a mode again resets consent and assessment progress so new Version 2 work cannot bypass the privacy screen. The MVP does not save student profiles, consent records, results, or feedback to a permanent database.
+The selected mode, consent record, assessment draft, recommendations, optional feedback, and essential-storage-notice dismissal each use separate versioned `sessionStorage` keys. Records are temporary and scoped to the current browser tab. **Retake Assessment** clears the assessment, results, and current feedback while preserving the selected mode and valid operational consent for the same tab. Selecting a mode again resets consent and assessment progress so new Version 2 work cannot bypass the privacy screen. The UI does not submit student profiles, consent records, results, or feedback to the prepared research database.
+
+The Supabase URL and anonymous key are placeholders required by the platform, but the browser is not allowed to read or write research tables. `SUPABASE_SERVICE_ROLE_KEY` is server-only and must never be exposed. RLS is enabled on all research tables with no permissive public policies. The service role bypasses RLS, so the server route and transactional function are the critical security boundary.
 
 Run project checks:
 
@@ -122,6 +126,7 @@ npm run test:recommendation-presentation
 npm run test:feedback
 npm run test:consent
 npm run test:research-governance
+npm run test:research-validation
 ```
 
 ## License

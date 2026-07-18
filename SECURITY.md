@@ -16,11 +16,11 @@ Include a clear description, steps to reproduce, possible impact, and a suggeste
 - Treat marks, interests, aptitude responses, and contact details as sensitive user data.
 - Do not log complete student profiles in production.
 - Keep eligibility sources auditable without storing applicant identity information.
-- Add authentication and a database only after an approved privacy and security design.
+- Connect any database to user flows only after approved privacy, security, ethics, and operational review.
 
 ## Current browser-storage architecture
 
-The current Version 2 application has no permanent applicant or research database. It uses separate versioned `sessionStorage` records for assessment mode, consent, assessment drafts, recommendation results, optional feedback, and dismissal of the essential-storage notice.
+The current Version 2 UI performs no permanent applicant or research writes. It uses separate versioned `sessionStorage` records for assessment mode, consent, assessment drafts, recommendation results, optional feedback, and dismissal of the essential-storage notice. A Supabase schema and disabled API foundation now exist, but no browser flow calls the API.
 
 - `sessionStorage` is temporary and scoped to the current browser tab; closing the tab may clear it.
 - Every structured record is validated at runtime before use.
@@ -40,7 +40,19 @@ Research collection defaults to disabled in local development, tests, and produc
 
 Adult readiness requires the exact collection flag plus configured ethics reference, committee, responsible researcher, research and privacy contacts, positive retention period, and withdrawal URL. Minor readiness additionally requires the exact minor-approval flag and references for approved guardian-consent and minor-assent procedures. Consent and configuration are independent controls: neither is sufficient alone. Configuration records an administrator assertion and must not be treated as evidence that approval is authentic or a participant procedure was completed.
 
-Any future database write path must call the central governance and participant-eligibility gate on the server immediately before storage, validate submitted data again, and fail closed. It must not rely on the legacy consent record's preliminary `researchStorageEligibility` field by itself. No database, permanent storage, analytics, cookies, or tracking was introduced with this gate.
+The prepared write path calls the central governance and participant-eligibility gate on the server immediately before storage, validates and recalculates submitted data, and fails closed. It does not rely on the legacy consent record's preliminary `researchStorageEligibility` field by itself. Missing governance or Supabase configuration returns a safe unavailable response.
+
+## Supabase server boundary
+
+- `SUPABASE_SERVICE_ROLE_KEY` is read only by `src/lib/supabase/server.ts`, which is marked `server-only` and imported only by the POST route.
+- The service role bypasses Row Level Security. Its power is intentionally limited by the API validator and the single transactional database function; accidental exposure would be a critical incident requiring immediate key rotation.
+- All 11 research tables have RLS enabled. There are no anonymous or authenticated public policies, no public reads, and no direct browser writes.
+- The route accepts JSON only, enforces a byte limit, uses generic error responses, and does not log request bodies, marks, raw answers, comments, contacts, or credentials.
+- Database credentials cannot enable collection. Governance, participant eligibility, consent, payload validation, and server-side derived-value verification must also pass.
+- Submission UUID uniqueness is enforced by database constraints. The database function performs all inserts atomically so validation or constraint failure leaves no partial assessment.
+- `participant_contacts` is separate, expects encrypted values, and is not written by the application in this stage.
+
+The schema excludes student names by default. It stores raw research responses and derived scores with explicit instrument, questionnaire, scoring-model, and program-data versions. Ethics and legal approval remain external requirements; administrative configuration does not prove either.
 
 ## Scope status
 

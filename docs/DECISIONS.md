@@ -154,6 +154,14 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** Add a central server-only validator whose absent, false, incomplete, inconsistent, or malformed configuration resolves to `guidance_only`. Adult readiness requires every documented adult administrative field. Minor readiness additionally requires the minor flag and guardian-consent and minor-assent procedure references. Preserve consent schema v1; treat its `researchStorageEligibility` field as preliminary metadata, and require any future database stage to combine current consent and age with the governance gate immediately before a write.
 - **Consequences:** Educational guidance remains fully available in every governance status. No database, persistence operation, analytics, cookie, tracker, package, or external service is added. Public pages receive only safe administrative metadata. Environment configuration records an administrator assertion and is not proof of legal or ethics approval. Minor-ready configuration is necessary but not participant-specific proof that guardian permission and assent occurred.
 
+## D-020 - Prepare a server-only transactional Supabase research boundary
+
+- **Status:** Accepted as disabled infrastructure; UI collection and production research remain unapproved
+- **Date:** 2026-07-18
+- **Context:** A later approved research stage needs a reviewable schema and write boundary before any assessment flow is connected. Supabase credentials, consent, or administrator configuration must never independently activate collection, and browser-supplied derived results cannot be trusted.
+- **Decision:** Add the official Supabase JavaScript client only. Isolate the service-role client in a `server-only` module and expose one POST-only route. Require request-time governance, participant eligibility, operational and research consent, strict payload validation, and server recalculation of important academic, RIASEC, aptitude, and recommendation values. Write through one service-role-only transactional PostgreSQL function. Enable RLS on all 11 tables with no public policies, keep contacts separate and unused, and leave the UI disconnected.
+- **Consequences:** The database schema can be reviewed and migrated without collecting assessment data. Submission UUID constraints prevent replay, transactions prevent partial records, and no public research reads or direct browser writes exist. The service role bypasses RLS and is therefore a critical secret and security boundary. Minor submissions remain blocked because the approved governance engine still has no minor-eligible participant outcome. Ethics, legal, retention, withdrawal, incident-response, and production-operations approval remain external requirements.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?

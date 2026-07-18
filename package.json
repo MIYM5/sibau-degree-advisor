@@ -22,9 +22,11 @@
     "test:feedback": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/feedback-tests scripts/test-assessment-feedback.ts && node .next/feedback-tests/scripts/test-assessment-feedback.js",
     "test:consent": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/consent-tests scripts/test-consent.ts && node .next/consent-tests/scripts/test-consent.js",
     "test:research-governance": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/research-governance-tests scripts/test-research-governance.ts src/lib/research-governance.ts src/types/research-governance.ts src/types/consent.ts && node .next/research-governance-tests/scripts/test-research-governance.js",
+    "test:research-validation": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/research-validation-tests scripts/test-research-record-validation.ts && node .next/research-validation-tests/scripts/test-research-record-validation.js",
     "validate:program-data": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/program-data-validation scripts/validate-program-data.ts src/data/programs.ts src/lib/validate-program-data.ts src/types/program.ts && node .next/program-data-validation/scripts/validate-program-data.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.7",
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"

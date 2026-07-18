@@ -149,6 +149,22 @@ Status: **Complete as a fail-closed administrative gate; research persistence re
 
 Configuration does not prove ethics or legal approval, and consent alone is insufficient for storage. Any later database implementation must validate governance and participant eligibility on the server immediately before each permanent write. A minor-ready system status still requires evidence that the approved participant-specific guardian-permission and assent procedure was completed.
 
+### Stage 11 - Disabled Supabase research-data infrastructure
+
+Status: **Complete as disconnected infrastructure; collection remains disabled and unapproved**
+
+- Add an RLS-enabled 11-table research schema with anonymous participant IDs and no student name.
+- Keep `participant_contacts` separate and unused.
+- Add one server-only official Supabase client using the service role.
+- Add a POST-only, JSON-only, size-limited API with generic safe errors and no request-body logging.
+- Re-evaluate governance, participant eligibility, operational consent, and research consent at request time.
+- Recalculate academic percentages, RIASEC results, aptitude correctness, and all 14 recommendation outcomes before writing.
+- Use one transactional database function and unique submission IDs to prevent partial or duplicate records.
+- Enable RLS on every table without anonymous/authenticated policies or public reads.
+- Leave the assessment and results UI completely disconnected from the API.
+
+Research collection still defaults to disabled. Supabase credentials do not activate it. The service role bypasses RLS and must remain server-only. Applying the migration, configuring production credentials, connecting the UI, approving a minor-eligible outcome, and beginning real research collection each require separate authorization and operational review.
+
 ### Planned later stages
 
 - Review the RIASEC program mappings with faculty and career-guidance experts.

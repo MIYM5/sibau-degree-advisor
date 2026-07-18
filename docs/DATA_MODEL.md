@@ -167,6 +167,30 @@ The consent payload excludes student name, email, phone, CNIC, address, subject 
 
 The public status view deliberately omits raw configuration, validation issues, and guardian/assent procedure references. No consent or governance object contains assessment answers, and no object is persisted permanently in this stage. The consent schema remains version 1; no migration is required.
 
+## Research submission payload and database schema
+
+The prepared `ResearchSubmission` schema is Version 1 and accepts Version 2 Quick or Detailed assessments only. It includes an anonymous participant UUID, a separate submission UUID, validated consent, age group, Intermediate group, subject marks, raw interest and aptitude responses, recalculated RIASEC and aptitude results, all 14 recommendation results, version metadata, timing, optional feedback, and an explicit minor-procedure-evidence placeholder. It excludes student name, email, phone, CNIC, address, exact geolocation, browser fingerprint, and an application-level IP-address field.
+
+Raw responses and derived results travel together with `assessmentVersion`, `questionnaireVersion`, `scoringModelVersion`, and `programDataVersion`. The validator rejects unknown top-level fields, malformed or duplicate records, incomplete instruments, inconsistent derived values, invalid consent, and every participant the current governance engine does not mark storage-eligible. Minor-ready administrator configuration remains insufficient because the current governance type has no minor-eligible outcome and no approved participant evidence is collected by the UI.
+
+The first migration defines 11 tables:
+
+| Table | Purpose |
+| --- | --- |
+| `participants` | Anonymous UUID, public research code, age group, and withdrawal timestamp. No student name. |
+| `consents` | One versioned operational/research consent snapshot per submission UUID. |
+| `assessments` | One assessment per submission UUID, mode, academic summary, versions, and timing. |
+| `subject_marks` | Validated subject-level obtained, total, and recalculated percentage values. |
+| `interest_responses` | Versioned raw Quick scenario or Detailed question response JSON. |
+| `riasec_scores` | Exactly one six-dimension RIASEC result per assessment. |
+| `aptitude_responses` | Five raw task choices plus server-recalculated correctness. |
+| `aptitude_results` | Exactly one aggregate brief-aptitude result per assessment. |
+| `recommendation_results` | All 14 server-verified program outcomes, classifications, scores, and ranks. |
+| `assessment_feedback` | At most one optional validated feedback record per assessment. |
+| `participant_contacts` | Separate future encrypted follow-up contact storage; unused by current code. |
+
+Foreign keys connect child rows to participants or assessments. Percentage, mark, rating, mode, rank, consent, and classification constraints enforce a second database safety layer. Unique constraints prevent duplicate submissions and repeated subject, question, task, program, result, or feedback records. All tables have RLS enabled and no public policy. The service-role-only transactional function bypasses RLS and must be protected by the server validator and governance gate.
+
 ## RIASEC interest model
 
 Version 2 infrastructure defines six stable RIASEC dimension IDs in this order:
