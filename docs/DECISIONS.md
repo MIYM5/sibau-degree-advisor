@@ -90,6 +90,14 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** Define the stable R-I-A-S-E-C order, complete six-dimension profiles, deterministic top-three codes, and one explicit 100-point mapping for every current program. Keep these structures separate from the active Version 1 interest model and recommendation engine.
 - **Consequences:** RIASEC data can be validated and reviewed without changing current results. The mappings are project assumptions, not official SIBAU weightages, and were not supplied or endorsed by O*NET. Faculty and career-guidance experts must review them before a later approved task connects them to student responses or recommendations.
 
+## D-012 — Use five ranked-choice RIASEC scenarios for Quick Guidance
+
+- **Status:** Accepted for preliminary review display; recommendation integration remains pending
+- **Date:** 2026-07-18
+- **Context:** Quick Guidance needs a brief interest activity that covers all six RIASEC dimensions without copying official O*NET Interest Profiler items or claiming psychometric validity.
+- **Decision:** Use five original project-designed scenarios. In each scenario, require three different choices: most preferred (+2), second preferred (+1), and least preferred (-1). Normalize each dimension from the stated -5 to 10 raw range with `((raw + 5) / 15) × 100`, clamp to 0–100, and use the existing deterministic R-I-A-S-E-C tie order. Label the evidence `Preliminary`.
+- **Consequences:** Students can review six scores and a three-letter profile after five scenarios. These values are not copied into `StudentProfile.interestScores`, matched to program RIASEC mappings, or used by recommendation scoring yet. The existing aptitude step remains active for Quick Guidance, and Detailed Guidance remains on the Version 1 questionnaires. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?
@@ -98,6 +106,8 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - Which interest and aptitude question scales will be used?
 - Which experts will review the Version 2 RIASEC program mappings, and what evidence will support revisions?
 - How should reviewed Quick and Detailed RIASEC evidence map into the active interest suitability component?
+- Should the forced most/second/least format be retained after student usability and expert review?
+- How should Quick Guidance communicate recommendation confidence while its RIASEC evidence remains review-only?
 - What test framework and data-validation library should be selected during Next.js setup?
 - What license should the repository use?
 - When, if ever, does the product need persistent data, authentication, or Supabase?

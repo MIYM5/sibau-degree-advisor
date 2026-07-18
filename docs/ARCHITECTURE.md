@@ -73,10 +73,10 @@ scripts/                # Development validation and focused tests
 
 1. **Start Assessment** opens `/assessment/mode`.
 2. The student selects Quick Guidance or Detailed Guidance. A dedicated, versioned session record stores the choice.
-3. Both modes currently continue to `/assessment`, where the existing Version 1 questionnaires remain active during this architecture stage.
-4. The student enters basic information and subject marks, then completes the existing interest and aptitude self-assessments.
-5. The Review step keeps the editable answers in React state until the student selects **View My Recommendations**.
-6. `assessment-to-student-profile.ts` validates the complete assessment, calculates the dimension scores, and creates the existing `StudentProfile` shape.
+3. Both modes continue to `/assessment` for basic information and subject marks.
+4. Quick Guidance completes five project-designed RIASEC scenarios, followed temporarily by the Version 1 aptitude self-assessment. Detailed Guidance continues to use the Version 1 interest and aptitude questionnaires.
+5. The Review step shows Quick RIASEC scores only for Quick Guidance. It keeps editable answers in React state until the student selects **View My Recommendations**.
+6. `assessment-to-student-profile.ts` creates the existing `StudentProfile` shape. Quick RIASEC scores are deliberately omitted from its Version 1 `interestScores`; Detailed Guidance continues to use the existing interest scores.
 7. The recommendation engine checks eligibility first, calculates suitability without changing eligibility, and ranks only eligible programs.
 8. A versioned payload containing the editable assessment draft, normalized profile, and generated result is written to browser `sessionStorage`.
 9. `/results` validates that payload before displaying summaries, ranked eligible programs, unranked verification-required and not-eligible programs, explanations, source notes, and warnings.
@@ -106,6 +106,12 @@ Mode selection uses a separate record so it does not change the Version 1 assess
 - runtime behavior: unknown modes, malformed JSON, and unsupported versions are rejected.
 
 If `/assessment` has neither a valid mode record nor a valid legacy Version 1 draft, it redirects to `/assessment/mode`. A valid Version 1 draft with no mode record is treated as legacy session data and remains accessible. Existing results are not rejected merely because they predate assessment modes.
+
+### Quick Guidance interest state
+
+Five Quick RIASEC scenario responses remain in React state during the assessment. A backward-compatible optional `quickInterestResponses` field is added to the Version 1 assessment draft only when Quick Guidance reaches results. Existing drafts without this field keep their previous validation and restoration behavior.
+
+Quick responses are validated before restoration. The recommendation engine receives an empty Version 1 interest-score record for Quick Guidance, so its existing missing-interest evidence behavior applies. No Quick RIASEC score or program RIASEC mapping is passed to the engine in this stage.
 
 ## Key boundaries
 

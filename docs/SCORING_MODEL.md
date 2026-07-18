@@ -59,13 +59,21 @@ The MVP interest assessment uses two statements for each of the 11 interest dime
 
 Dimension evidence coverage is the number of valid responses divided by the two expected responses. The assessment flow requires all 22 responses before review. These questions and mappings are recommendation-model assumptions, not an official or psychometric assessment.
 
-### Version 2 RIASEC infrastructure
+### Version 2 RIASEC infrastructure and Quick Guidance
 
 Version 2 defines Realistic, Investigative, Artistic, Social, Enterprising, and Conventional dimensions plus program-specific RIASEC mappings. Every program mapping totals 100 and uses a stable R-I-A-S-E-C dimension order.
 
 The RIASEC mappings are project-model assumptions awaiting review by faculty and career-guidance experts. They are not official SIBAU weightages and were not supplied or endorsed by O*NET.
 
-No active scoring behavior changes in this stage. The Version 1 interest questions, 11 interest dimensions, program interest weights, interest-scoring function, 50/30/20 final formula, rankings, confidence, and results remain active. RIASEC scores must not influence recommendations until a separately approved task defines reviewed questions, evidence handling, scoring integration, and regression tests.
+Quick Guidance now collects five broad scenarios. In each scenario, most preferred adds 2 points, second preferred adds 1 point, least preferred subtracts 1 point, and unselected dimensions add 0. Across five scenarios, each raw dimension has a stated range from -5 to 10 and is normalized without rounding:
+
+```text
+QuickRIASECScore = clamp(((raw score + 5) / 15) × 100, 0, 100)
+```
+
+The normalized scores generate a deterministic top-three profile and a `Preliminary` evidence label for review. The questions are original project-designed items informed by the RIASEC framework; they are not official O*NET Interest Profiler items or a validated psychometric assessment.
+
+No active recommendation formula changes in this stage. Quick RIASEC scores are not copied into `StudentProfile.interestScores`, matched against program RIASEC mappings, or sent to the recommendation engine. The engine's existing missing-interest handling applies to Quick Guidance. Detailed Guidance continues to use the Version 1 interest questions, 11 dimensions, program interest weights, and scoring. Both modes temporarily retain the Version 1 aptitude self-assessment, 50/30/20 final formula, rankings, confidence, and results behavior.
 
 ### Aptitude suitability
 

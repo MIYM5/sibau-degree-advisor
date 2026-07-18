@@ -88,6 +88,7 @@ The editable draft supports route-to-route navigation within one browser-tab ses
 | `subjectRows` | Editable subject rows, including whether a row is optional. |
 | `interestResponses` | Responses keyed by the typed interest-question IDs. |
 | `aptitudeResponses` | Responses keyed by the typed aptitude-question IDs. |
+| `quickInterestResponses` | Optional complete five-scenario response list used only by Quick Guidance. Absent from legacy and Detailed drafts. |
 
 The draft is validated before it is restored. It is not a second domain model and is converted into the shared `StudentProfile` before recommendation logic runs.
 
@@ -142,6 +143,21 @@ Version 2 infrastructure defines six stable RIASEC dimension IDs in this order:
 `ProgramRiasecWeights` links one existing `ProgramId` to exactly six weights totaling 100. All 14 current programs have one explicit mapping. Validation rejects unknown or duplicate programs, missing or extra dimensions, out-of-range values, incorrect totals, and changes to the stable dimension order.
 
 These mappings are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty and career-guidance experts. They are not connected to `StudentProfile`, active interest scoring, or recommendation results yet.
+
+## Quick Guidance interest assessment
+
+Quick Guidance contains exactly five scenarios: School project, Free afternoon, Team role, Problem to solve, and Future workday. Every scenario has one original project-designed choice for each RIASEC dimension. A response stores the scenario ID plus three different choice IDs for most preferred, second preferred, and least preferred.
+
+| Structure | Purpose |
+| --- | --- |
+| `QuickInterestScenario` | Stable scenario ID, title, question, order, and exactly six choices. |
+| `QuickInterestChoice` | Stable choice ID, RIASEC dimension, statement, and order. |
+| `QuickInterestResponse` | Scenario plus most, second, and least choice IDs. |
+| `QuickInterestAssessmentResult` | Raw totals, normalized six-dimension scores, preliminary profile, coverage, errors, and validity. |
+
+The validator rejects unknown scenarios or choices, choices from another scenario, duplicate scenario responses, repeated preferences, missing positions, incomplete coverage, and malformed data. Complete results use the existing deterministic R-I-A-S-E-C tie order to create the top three and three-letter code.
+
+Quick RIASEC scores are review-only. They do not replace `StudentProfile.interestScores` or enter recommendation scoring yet. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
 
 ## Recommendation session payload
 

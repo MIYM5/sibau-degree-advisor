@@ -13,6 +13,7 @@ export type RiasecDimension = (typeof riasecDimensionOrder)[number];
 export type RiasecDimensionCode = "R" | "I" | "A" | "S" | "E" | "C";
 export type RiasecScores = Record<RiasecDimension, number>;
 export type RiasecEvidenceLabel =
+  | "Preliminary"
   | "Preliminary guidance"
   | "Stronger interest evidence";
 export type HollandCode = `${RiasecDimensionCode}${RiasecDimensionCode}${RiasecDimensionCode}`;

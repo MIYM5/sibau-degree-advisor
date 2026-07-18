@@ -22,7 +22,10 @@ import {
   type SubjectMarkDraft,
   type SubjectMarksValidationResult,
 } from "@/lib/assessment-form";
-import { buildStudentProfile } from "@/lib/assessment-to-student-profile";
+import {
+  buildQuickStudentProfile,
+  buildStudentProfile,
+} from "@/lib/assessment-to-student-profile";
 import {
   ASSESSMENT_DRAFT_SESSION_KEY,
   RECOMMENDATION_SESSION_KEY,
@@ -43,15 +46,18 @@ import {
   type InterestResponses,
 } from "@/lib/interest-assessment";
 import { generateRecommendations } from "@/lib/recommendation-engine";
+import { calculateQuickInterestAssessment } from "@/lib/quick-interest-assessment";
 import {
   assessmentModeMetadata,
   type AssessmentMode,
 } from "@/types/assessment-mode";
 import type { IntermediateGroup } from "@/types/program";
+import type { QuickInterestResponseDraft } from "@/types/quick-interest";
 
 import { AptitudeStep } from "./aptitude-step";
 import { InterestStep } from "./interest-step";
 import { ProgressSteps } from "./progress-steps";
+import { QuickInterestStep } from "./quick-interest-step";
 import { ReviewStep } from "./review-step";
 import { SubjectMarksStep } from "./subject-marks-step";
 
@@ -80,6 +86,12 @@ export function AssessmentFlow() {
     useState<SubjectMarksValidationResult>(emptySubjectValidation);
   const [interestResponses, setInterestResponses] = useState<InterestResponses>({});
   const interestAssessment = calculateInterestAssessment(interestResponses);
+  const [quickInterestResponses, setQuickInterestResponses] = useState<
+    QuickInterestResponseDraft[]
+  >([]);
+  const quickInterestAssessment = calculateQuickInterestAssessment(
+    quickInterestResponses,
+  );
   const [aptitudeResponses, setAptitudeResponses] = useState<AptitudeResponses>({});
   const aptitudeAssessment = calculateAptitudeAssessment(aptitudeResponses);
   const [recommendationError, setRecommendationError] = useState<string>();
@@ -98,7 +110,14 @@ export function AssessmentFlow() {
       }
     : null;
   const profileBuild = completedAssessment
-    ? buildStudentProfile(completedAssessment)
+    ? activeMode === "quick"
+      ? buildQuickStudentProfile({
+          name: completedAssessment.name,
+          intermediateGroup: completedAssessment.intermediateGroup,
+          subjectMarks: completedAssessment.subjectMarks,
+          aptitudeResponses: completedAssessment.aptitudeResponses,
+        })
+      : buildStudentProfile(completedAssessment)
     : null;
   const studentProfile = profileBuild?.isValid ? profileBuild.profile : null;
 
@@ -120,7 +139,9 @@ export function AssessmentFlow() {
       setActiveMode(
         modeResolution.status === "selected"
           ? modeResolution.mode
-          : "legacy",
+          : savedDraft?.quickInterestResponses
+            ? "quick"
+            : "legacy",
       );
 
       if (savedDraft) {
@@ -130,6 +151,7 @@ export function AssessmentFlow() {
         setSubjectRows(savedDraft.subjectRows);
         setInterestResponses(savedDraft.interestResponses);
         setAptitudeResponses(savedDraft.aptitudeResponses);
+        setQuickInterestResponses(savedDraft.quickInterestResponses ?? []);
         setCurrentStep(5);
       }
     });
@@ -190,8 +212,28 @@ export function AssessmentFlow() {
   }
 
   function continueToAptitudeAssessment() {
-    if (!interestAssessment.isValid) return;
+    if (
+      activeMode === "quick"
+        ? !quickInterestAssessment.isValid
+        : !interestAssessment.isValid
+    ) {
+      return;
+    }
     setCurrentStep(4);
+  }
+
+  function updateQuickInterestResponse(
+    response: QuickInterestResponseDraft,
+  ) {
+    setQuickInterestResponses((responses) => {
+      const existingIndex = responses.findIndex(
+        (candidate) => candidate.scenarioId === response.scenarioId,
+      );
+      if (existingIndex < 0) return [...responses, response];
+      return responses.map((candidate, index) =>
+        index === existingIndex ? response : candidate,
+      );
+    });
   }
 
   function answerAptitudeQuestion(
@@ -218,7 +260,20 @@ export function AssessmentFlow() {
       return;
     }
 
-    const buildResult = buildStudentProfile(completedAssessment);
+    if (activeMode === "quick" && !quickInterestAssessment.isValid) {
+      setRecommendationError(
+        "Complete all five Quick Guidance interest scenarios before continuing.",
+      );
+      return;
+    }
+
+    const buildResult = profileBuild;
+    if (!buildResult) {
+      setRecommendationError(
+        "The assessment profile could not be prepared. Review the earlier steps and try again.",
+      );
+      return;
+    }
     if (!buildResult.isValid) {
       setRecommendationError(buildResult.errors.join(" "));
       return;
@@ -232,6 +287,9 @@ export function AssessmentFlow() {
         subjectRows,
         interestResponses,
         aptitudeResponses,
+        ...(activeMode === "quick"
+          ? { quickInterestResponses: quickInterestAssessment.responses }
+          : {}),
       };
       const recommendationResult = generateRecommendations(buildResult.profile);
       const payload = createRecommendationSessionPayload(
@@ -281,7 +339,9 @@ export function AssessmentFlow() {
           <span className="font-bold">Selected mode:</span> {activeModeTitle}
           {activeMode !== "legacy" && (
             <span className="text-teal-800">
-              {" "}· New mode-specific questions are being introduced in stages.
+              {activeMode === "quick"
+                ? " · Quick RIASEC interests are active; aptitude remains the current self-assessment."
+                : " · Detailed mode-specific questions are being introduced in stages."}
             </span>
           )}
         </p>
@@ -447,12 +507,21 @@ export function AssessmentFlow() {
           )}
 
           {currentStep === 3 && (
-            <InterestStep
-              responses={interestResponses}
-              onAnswer={answerInterestQuestion}
-              onBackToSubjects={() => setCurrentStep(2)}
-              onComplete={continueToAptitudeAssessment}
-            />
+            activeMode === "quick" ? (
+              <QuickInterestStep
+                responses={quickInterestResponses}
+                onChange={updateQuickInterestResponse}
+                onBackToSubjects={() => setCurrentStep(2)}
+                onComplete={continueToAptitudeAssessment}
+              />
+            ) : (
+              <InterestStep
+                responses={interestResponses}
+                onAnswer={answerInterestQuestion}
+                onBackToSubjects={() => setCurrentStep(2)}
+                onComplete={continueToAptitudeAssessment}
+              />
+            )
           )}
 
           {currentStep === 4 && (
@@ -466,7 +535,15 @@ export function AssessmentFlow() {
 
           {currentStep === 5 && studentProfile && (
             <div>
-              <ReviewStep studentProfile={studentProfile} />
+              <ReviewStep
+                studentProfile={studentProfile}
+                assessmentMode={activeMode}
+                quickInterestResult={
+                  activeMode === "quick" && quickInterestAssessment.isValid
+                    ? quickInterestAssessment
+                    : undefined
+                }
+              />
               <div className="mt-10 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"

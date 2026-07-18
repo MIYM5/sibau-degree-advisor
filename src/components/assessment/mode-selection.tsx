@@ -141,9 +141,10 @@ export function ModeSelection() {
       <aside className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950 sm:p-6">
         <p className="font-bold">Temporary Version 2.0 notice</p>
         <p className="mt-2">
-          Version 2.0 assessment content is being introduced in stages. Both
-          options currently continue to the existing assessment while the new
-          mode-specific questionnaires are under development.
+          Quick Guidance now includes five RIASEC interest scenarios but still
+          uses the existing aptitude self-assessment temporarily. Detailed
+          Guidance continues to use the existing interest and aptitude
+          questionnaires while its new content is under development.
         </p>
       </aside>
 

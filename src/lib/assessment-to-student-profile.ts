@@ -18,6 +18,13 @@ export interface CompletedAssessmentData {
   aptitudeResponses: AptitudeResponses;
 }
 
+export interface CompletedQuickAssessmentData {
+  name: string;
+  intermediateGroup: IntermediateGroup;
+  subjectMarks: readonly SubjectMark[];
+  aptitudeResponses: AptitudeResponses;
+}
+
 export type StudentProfileBuildResult =
   | { isValid: true; profile: StudentProfile; errors: [] }
   | { isValid: false; profile: null; errors: string[] };
@@ -105,6 +112,48 @@ export function buildStudentProfile(
       intermediateGroup: assessment.intermediateGroup,
       subjectMarks: assessment.subjectMarks.map((mark) => ({ ...mark })),
       interestScores: interestAssessment.scores,
+      aptitudeScores: aptitudeAssessment.scores,
+    },
+  };
+}
+
+/**
+ * Creates the temporary Quick Guidance profile used by the unchanged
+ * recommendation engine. Quick RIASEC evidence is deliberately not copied
+ * into the Version 1 interest-score fields in this integration stage.
+ */
+export function buildQuickStudentProfile(
+  assessment: CompletedQuickAssessmentData,
+): StudentProfileBuildResult {
+  const errors: string[] = [];
+
+  if (assessment.name.trim().length === 0) {
+    errors.push("Student name is required.");
+  }
+  if (!intermediateGroups.includes(assessment.intermediateGroup)) {
+    errors.push("A valid Intermediate group is required.");
+  }
+  errors.push(...validateSubjectMarks(assessment.subjectMarks));
+
+  const aptitudeAssessment = calculateAptitudeAssessment(
+    assessment.aptitudeResponses,
+  );
+  if (!aptitudeAssessment.isValid) {
+    errors.push("All aptitude responses must be present and valid.");
+  }
+
+  if (errors.length > 0) {
+    return { isValid: false, profile: null, errors };
+  }
+
+  return {
+    isValid: true,
+    errors: [],
+    profile: {
+      name: assessment.name.trim(),
+      intermediateGroup: assessment.intermediateGroup,
+      subjectMarks: assessment.subjectMarks.map((mark) => ({ ...mark })),
+      interestScores: {},
       aptitudeScores: aptitudeAssessment.scores,
     },
   };

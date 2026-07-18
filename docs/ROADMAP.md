@@ -6,7 +6,7 @@ This roadmap keeps SIBAU Degree Advisor small enough for a first full web applic
 
 - Version 1 is preserved on the `main` branch and tag `v1.0.0`.
 - Version 2 development occurs on the `version-2.0` branch.
-- Version 2 currently includes assessment-mode architecture and inactive RIASEC data infrastructure. The existing Version 1 interest questions, aptitude questions, eligibility handling, scoring, recommendation engine, and results remain active temporarily.
+- Version 2 currently includes assessment-mode architecture, RIASEC data infrastructure, and the five-scenario Quick Guidance interest activity. Quick RIASEC scores remain review-only; existing eligibility and recommendation behavior remains active.
 
 ## Version 2 staged assessment upgrade
 
@@ -34,9 +34,21 @@ Status: **Complete as inactive infrastructure; expert review pending**
 
 The mappings are project-model assumptions, not official SIBAU weightages, and were not supplied or endorsed by O*NET. Faculty and career-guidance experts must review them before activation.
 
+### Stage 3 — Quick Guidance RIASEC interests
+
+Status: **Complete for review-only use; expert and usability review pending**
+
+- Add five original broad scenarios covering every RIASEC dimension.
+- Require different most, second, and least preferences in each scenario.
+- Normalize raw scores to 0–100 and generate the deterministic preliminary profile.
+- Preserve responses across navigation and same-session result editing.
+- Display six scores, top three, code, evidence label, and disclaimer during review.
+- Keep Quick RIASEC values disconnected from recommendation scoring.
+
+Quick Guidance still uses the Version 1 aptitude self-assessment. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
+
 ### Planned later stages
 
-- Replace Quick Guidance interest content with 5 broad scenarios.
 - Replace Detailed Guidance interest content with 30 reviewed RIASEC items.
 - Replace the current aptitude self-assessment with 5 reviewed objective tasks for each mode.
 - Review the RIASEC program mappings with faculty and career-guidance experts.

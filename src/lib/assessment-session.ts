@@ -3,6 +3,7 @@ import { interestQuestions } from "../data/interest-questions";
 import { programs } from "../data/programs";
 import type { RecommendationEngineResult } from "./recommendation-engine";
 import {
+  buildQuickStudentProfile,
   buildStudentProfile,
   type CompletedAssessmentData,
 } from "./assessment-to-student-profile";
@@ -13,7 +14,9 @@ import {
 } from "./assessment-form";
 import type { AptitudeResponses } from "./aptitude-assessment";
 import type { InterestResponses } from "./interest-assessment";
+import { calculateQuickInterestAssessment } from "./quick-interest-assessment";
 import type { IntermediateGroup } from "../types/program";
+import type { QuickInterestResponse } from "../types/quick-interest";
 import type { RecommendationResult } from "../types/recommendation";
 import type { StudentProfile } from "../types/student";
 
@@ -28,6 +31,7 @@ export interface AssessmentSessionDraft {
   subjectRows: SubjectMarkDraft[];
   interestResponses: InterestResponses;
   aptitudeResponses: AptitudeResponses;
+  quickInterestResponses?: QuickInterestResponse[];
 }
 
 export interface RecommendationSessionPayload {
@@ -102,6 +106,12 @@ export function isAssessmentSessionDraft(
   }
 
   const subjectValidation = validateSubjectMarkRows(value.subjectRows);
+  const quickInterestAssessment =
+    value.quickInterestResponses === undefined
+      ? null
+      : calculateQuickInterestAssessment(value.quickInterestResponses);
+  if (quickInterestAssessment && !quickInterestAssessment.isValid) return false;
+
   const completedAssessment: CompletedAssessmentData = {
     name: value.name,
     intermediateGroup: value.intermediateGroup as IntermediateGroup,
@@ -110,9 +120,16 @@ export function isAssessmentSessionDraft(
     aptitudeResponses: value.aptitudeResponses,
   };
 
-  return (
-    subjectValidation.isValid && buildStudentProfile(completedAssessment).isValid
-  );
+  const profileBuild = quickInterestAssessment
+    ? buildQuickStudentProfile({
+        name: value.name,
+        intermediateGroup: value.intermediateGroup as IntermediateGroup,
+        subjectMarks: toSubjectMarks(value.subjectRows),
+        aptitudeResponses: value.aptitudeResponses,
+      })
+    : buildStudentProfile(completedAssessment);
+
+  return subjectValidation.isValid && profileBuild.isValid;
 }
 
 function isRecommendationResult(value: unknown): value is RecommendationResult {
@@ -233,13 +250,20 @@ export function parseRecommendationSessionPayload(
       return null;
     }
 
-    const rebuilt = buildStudentProfile({
-      name: value.assessmentDraft.name,
-      intermediateGroup: value.assessmentDraft.intermediateGroup,
-      subjectMarks: toSubjectMarks(value.assessmentDraft.subjectRows),
-      interestResponses: value.assessmentDraft.interestResponses,
-      aptitudeResponses: value.assessmentDraft.aptitudeResponses,
-    });
+    const rebuilt = value.assessmentDraft.quickInterestResponses
+      ? buildQuickStudentProfile({
+          name: value.assessmentDraft.name,
+          intermediateGroup: value.assessmentDraft.intermediateGroup,
+          subjectMarks: toSubjectMarks(value.assessmentDraft.subjectRows),
+          aptitudeResponses: value.assessmentDraft.aptitudeResponses,
+        })
+      : buildStudentProfile({
+          name: value.assessmentDraft.name,
+          intermediateGroup: value.assessmentDraft.intermediateGroup,
+          subjectMarks: toSubjectMarks(value.assessmentDraft.subjectRows),
+          interestResponses: value.assessmentDraft.interestResponses,
+          aptitudeResponses: value.assessmentDraft.aptitudeResponses,
+        });
     if (
       !rebuilt.isValid ||
       JSON.stringify(rebuilt.profile) !== JSON.stringify(value.studentProfile)

@@ -8,7 +8,9 @@ SIBAU Degree Advisor is an independent web application project that will help pr
 
 Version 1 remains preserved on the `main` branch and at tag `v1.0.0`. Version 2 development is taking place on the `version-2.0` branch.
 
-The repository contains the approved documentation foundation, the Excel knowledge base, typed program data, validated eligibility and recommendation engines, and a responsive end-to-end frontend flow. Version 2 now includes the architecture for **Quick Guidance** and **Detailed Guidance**, a typed six-dimension RIASEC model, and explicit RIASEC mappings for all 14 programs. The mappings are Version 2 infrastructure only: both modes temporarily continue to the existing Version 1 questionnaires and interest scoring while new mode-specific content is developed and reviewed.
+The repository contains the approved documentation foundation, the Excel knowledge base, typed program data, validated eligibility and recommendation engines, and a responsive end-to-end frontend flow. Version 2 now includes the architecture for **Quick Guidance** and **Detailed Guidance**, a typed six-dimension RIASEC model, explicit RIASEC mappings for all 14 programs, and the five-scenario Quick Guidance interest activity.
+
+Quick Guidance displays preliminary RIASEC scores and a three-letter profile during review, but those values are not yet connected to recommendation scoring. Its aptitude step remains the Version 1 self-assessment temporarily. Detailed Guidance also remains on the Version 1 interest and aptitude questionnaires while its mode-specific content is developed.
 
 RIASEC program mappings are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty and career-guidance experts before they influence recommendations.
 
@@ -100,6 +102,7 @@ npm run lint
 npm run build
 npm run test:integration
 npm run test:riasec-data
+npm run test:quick-interest
 ```
 
 ## License
