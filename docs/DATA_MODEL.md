@@ -91,6 +91,39 @@ The editable draft supports route-to-route navigation within one browser-tab ses
 
 The draft is validated before it is restored. It is not a second domain model and is converted into the shared `StudentProfile` before recommendation logic runs.
 
+## Assessment mode
+
+Version 2 introduces a selection before the existing assessment:
+
+```text
+AssessmentMode = "quick" | "detailed"
+```
+
+Each mode has typed metadata:
+
+| Field | Purpose |
+| --- | --- |
+| `id` | Stable `quick` or `detailed` identifier. |
+| `title` | Student-facing mode name. |
+| `description` | Short explanation of the mode's intended depth. |
+| `estimatedMinutes` | Minimum and maximum estimated completion time. |
+| `interestQuestionCount` | Planned number of interest items. |
+| `aptitudeQuestionCount` | Planned number of objective aptitude tasks. |
+| `evidenceLabel` | Plain-language strength label for the guidance. |
+
+Quick Guidance is planned for 5 broad interest scenarios and 5 objective aptitude tasks. Detailed Guidance is planned for 30 RIASEC interest items and 5 objective aptitude tasks. These counts describe the Version 2 architecture; both modes temporarily use the existing Version 1 questionnaires.
+
+## Assessment-mode session payload
+
+The mode is stored separately from the assessment draft and recommendation result:
+
+| Field | Purpose |
+| --- | --- |
+| `version` | Schema version for the dedicated mode payload. The first schema uses `1`. |
+| `selectedMode` | Validated `quick` or `detailed` selection. |
+
+The dedicated key is `sibau-degree-advisor:assessment-mode:v1`. Missing mode data is allowed when an otherwise valid Version 1 assessment draft is present. Malformed data, unknown modes, and unsupported versions require a new selection. This separation keeps the existing Version 1 session payloads backward compatible.
+
 ## Recommendation session payload
 
 After final Review confirmation, the app stores a versioned session payload containing:

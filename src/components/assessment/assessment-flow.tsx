@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -30,6 +31,10 @@ import {
   type AssessmentSessionDraft,
 } from "@/lib/assessment-session";
 import {
+  ASSESSMENT_MODE_SESSION_KEY,
+  resolveAssessmentModeSession,
+} from "@/lib/assessment-mode-session";
+import {
   calculateAptitudeAssessment,
   type AptitudeResponses,
 } from "@/lib/aptitude-assessment";
@@ -38,6 +43,10 @@ import {
   type InterestResponses,
 } from "@/lib/interest-assessment";
 import { generateRecommendations } from "@/lib/recommendation-engine";
+import {
+  assessmentModeMetadata,
+  type AssessmentMode,
+} from "@/types/assessment-mode";
 import type { IntermediateGroup } from "@/types/program";
 
 import { AptitudeStep } from "./aptitude-step";
@@ -75,6 +84,9 @@ export function AssessmentFlow() {
   const aptitudeAssessment = calculateAptitudeAssessment(aptitudeResponses);
   const [recommendationError, setRecommendationError] = useState<string>();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeMode, setActiveMode] = useState<AssessmentMode | "legacy" | null>(
+    null,
+  );
 
   const completedAssessment = intermediateGroup
     ? {
@@ -94,20 +106,36 @@ export function AssessmentFlow() {
     const savedDraft = parseAssessmentSessionDraft(
       window.sessionStorage.getItem(ASSESSMENT_DRAFT_SESSION_KEY),
     );
-    if (!savedDraft) return;
+    const modeResolution = resolveAssessmentModeSession(
+      window.sessionStorage.getItem(ASSESSMENT_MODE_SESSION_KEY),
+      savedDraft !== null,
+    );
+
+    if (modeResolution.status === "selection-required") {
+      router.replace("/assessment/mode");
+      return;
+    }
 
     const frame = window.requestAnimationFrame(() => {
-      setName(savedDraft.name);
-      setIntermediateGroup(savedDraft.intermediateGroup);
-      setInitializedGroup(savedDraft.intermediateGroup);
-      setSubjectRows(savedDraft.subjectRows);
-      setInterestResponses(savedDraft.interestResponses);
-      setAptitudeResponses(savedDraft.aptitudeResponses);
-      setCurrentStep(5);
+      setActiveMode(
+        modeResolution.status === "selected"
+          ? modeResolution.mode
+          : "legacy",
+      );
+
+      if (savedDraft) {
+        setName(savedDraft.name);
+        setIntermediateGroup(savedDraft.intermediateGroup);
+        setInitializedGroup(savedDraft.intermediateGroup);
+        setSubjectRows(savedDraft.subjectRows);
+        setInterestResponses(savedDraft.interestResponses);
+        setAptitudeResponses(savedDraft.aptitudeResponses);
+        setCurrentStep(5);
+      }
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [router]);
 
   function continueFromBasicInformation() {
     const errors = validateBasicInformation(name, intermediateGroup);
@@ -229,8 +257,41 @@ export function AssessmentFlow() {
     }
   }
 
+  if (activeMode === null) {
+    return (
+      <div className="mx-auto w-full max-w-5xl" aria-live="polite">
+        <div className="rounded-[1.75rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-sm font-bold text-teal-700">
+            Preparing your assessment…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const activeModeTitle =
+    activeMode === "legacy"
+      ? "Version 1 assessment"
+      : assessmentModeMetadata[activeMode].title;
+
   return (
     <div className="mx-auto w-full max-w-5xl">
+      <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-teal-200 bg-teal-50 px-5 py-4 text-sm text-teal-950 sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          <span className="font-bold">Selected mode:</span> {activeModeTitle}
+          {activeMode !== "legacy" && (
+            <span className="text-teal-800">
+              {" "}· New mode-specific questions are being introduced in stages.
+            </span>
+          )}
+        </p>
+        <Link
+          href="/assessment/mode"
+          className="shrink-0 rounded-lg font-bold text-teal-800 underline decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+        >
+          Change mode
+        </Link>
+      </div>
       <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.3)] sm:p-8 lg:p-10">
         <ProgressSteps currentStep={currentStep} />
 

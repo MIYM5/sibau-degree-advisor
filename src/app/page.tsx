@@ -52,7 +52,7 @@ export default function Home() {
               transparent, guidance-first process.
             </p>
             <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <Link href="/assessment" className="primary-button text-base">
+              <Link href="/assessment/mode" className="primary-button text-base">
                 Start Assessment
                 <span aria-hidden="true" className="ml-2">
                   →
@@ -152,7 +152,7 @@ export default function Home() {
             </p>
           </div>
           <Link
-            href="/assessment"
+            href="/assessment/mode"
             className="secondary-button shrink-0 border-amber-300 bg-white text-amber-950 hover:border-amber-600"
           >
             Begin academic profile

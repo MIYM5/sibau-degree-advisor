@@ -2,6 +2,34 @@
 
 This roadmap keeps SIBAU Degree Advisor small enough for a first full web application while protecting the accuracy of eligibility guidance. Dates are intentionally not promised yet.
 
+## Version baselines
+
+- Version 1 is preserved on the `main` branch and tag `v1.0.0`.
+- Version 2 development occurs on the `version-2.0` branch.
+- The current Version 2 task adds assessment-mode architecture only. The existing Version 1 interest questions, aptitude questions, eligibility handling, scoring, recommendation engine, and results remain active temporarily.
+
+## Version 2 staged assessment upgrade
+
+Status: **In progress**
+
+### Stage 1 — Mode architecture
+
+- Add Quick Guidance and Detailed Guidance metadata.
+- Add a responsive mode-selection route.
+- Store and validate the selected mode in temporary session storage.
+- Preserve valid Version 1 sessions that have no mode selection.
+- Route both choices through the existing working assessment until their new content is approved.
+
+### Planned later stages
+
+- Replace Quick Guidance interest content with 5 broad scenarios.
+- Replace Detailed Guidance interest content with 30 reviewed RIASEC items.
+- Replace the current aptitude self-assessment with 5 reviewed objective tasks for each mode.
+- Define and review how mode-specific evidence maps into the existing scoring dimensions.
+- Add validation and regression tests before activating new scoring inputs.
+
+The planned question counts and evidence labels are recommendation-model design assumptions. New content must be reviewed before it replaces the current questionnaires.
+
 ## Phase 0 — Documentation foundation
 
 Status: **In progress**
