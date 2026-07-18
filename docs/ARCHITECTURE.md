@@ -13,6 +13,7 @@ Version 1 is preserved on `main` and tag `v1.0.0`. Version 2 work takes place on
 App Router pages and reusable React components will handle:
 
 - the disclaimer and privacy notice;
+- age-group selection, operational consent, and independent optional choices;
 - Intermediate group and marks input;
 - interest and aptitude questions;
 - results, explanations, warnings, and source links;
@@ -74,16 +75,18 @@ scripts/                # Development validation and focused tests
 ## Main request flow
 
 1. **Start Assessment** opens `/assessment/mode`.
-2. The student selects Quick Guidance or Detailed Guidance. A dedicated, versioned session record stores the choice.
-3. Both modes continue to `/assessment` for basic information and subject marks.
-4. Quick Guidance completes five project-designed RIASEC scenarios. Detailed Guidance completes 30 project-designed RIASEC activity-preference questions, with five questions for each dimension. Both modes then complete the same five objective aptitude tasks.
-5. The Review step shows the selected mode's RIASEC profile plus five aptitude-task outcomes, total correct, overall percentage, `Limited` confidence, and disclaimers. It keeps editable answers in React state until the student selects **View My Recommendations**.
-6. `assessment-to-student-profile.ts` creates a discriminated Version 2 recommendation input containing the academic profile, selected mode, native RIASEC result, and brief aptitude result. It does not force Version 2 evidence into legacy `StudentProfile` dimensions.
-7. The recommendation engine checks eligibility first. Quick uses 55/30/15 and Detailed uses 50/35/15 for academic, RIASEC, and brief aptitude suitability; only eligible programs are ranked.
-8. A versioned payload containing the editable draft, strict recommendation input, scoring metadata, and generated result is written to browser `sessionStorage`. Version 1 payloads retain their original profile-based shape.
-9. `/results` validates that payload, then `recommendation-presentation.ts` groups existing eligible ranks 1â€“3 as Top Matches and ranks 4â€“5 as Alternative Options. It compares adjacent eligible scores for display without sorting or recalculating them.
-10. The page shows engine warnings before recommendation cards, keeps verification-required and not-eligible programs unranked, and finishes with a mode-aware student-profile and methodology summary. Version 1 payloads use a compatible legacy summary.
-11. After Quick or Detailed recommendations are visible, the student may submit or skip a short feedback form. Feedback uses its own validator and session key and never calls eligibility, scoring, ranking, or confidence logic.
+2. The student selects Quick Guidance or Detailed Guidance. A dedicated, versioned session record stores the choice and `/consent` opens.
+3. The student selects an age group and reviews the Privacy and Research Data Notice. Required operational consent must be granted; research, follow-up contact, and future analytics choices remain optional and independent.
+4. A valid versioned consent record permits `/assessment` to open for the selected Version 2 mode. A valid Version 1 draft retains its compatibility path.
+5. Both modes collect basic information and subject marks.
+6. Quick Guidance completes five project-designed RIASEC scenarios. Detailed Guidance completes 30 project-designed RIASEC activity-preference questions, with five questions for each dimension. Both modes then complete the same five objective aptitude tasks.
+7. The Review step shows the selected mode's RIASEC profile plus five aptitude-task outcomes, total correct, overall percentage, `Limited` confidence, and disclaimers. It keeps editable answers in React state until the student selects **View My Recommendations**.
+8. `assessment-to-student-profile.ts` creates a discriminated Version 2 recommendation input containing the academic profile, selected mode, native RIASEC result, and brief aptitude result. It does not force Version 2 evidence into legacy `StudentProfile` dimensions.
+9. The recommendation engine checks eligibility first. Quick uses 55/30/15 and Detailed uses 50/35/15 for academic, RIASEC, and brief aptitude suitability; only eligible programs are ranked.
+10. A versioned payload containing the editable draft, strict recommendation input, scoring metadata, and generated result is written to browser `sessionStorage`. Version 1 payloads retain their original profile-based shape.
+11. `/results` validates that payload, then `recommendation-presentation.ts` groups existing eligible ranks 1â€“3 as Top Matches and ranks 4â€“5 as Alternative Options. It compares adjacent eligible scores for display without sorting or recalculating them.
+12. The page shows engine warnings before recommendation cards, keeps verification-required and not-eligible programs unranked, and finishes with a mode-aware student-profile and methodology summary. Version 1 payloads use a compatible legacy summary.
+13. After Quick or Detailed recommendations are visible, the student may submit or skip a short feedback form. Feedback uses its own validator and session key and never calls eligibility, scoring, ranking, or confidence logic.
 
 The engine runs only after final Review confirmation. The interface does not copy eligibility or scoring rules into React components.
 
@@ -109,6 +112,22 @@ The current MVP uses `sessionStorage` because `/assessment` and `/results` are s
 - Opening `/results` without valid session data shows a neutral empty state.
 
 This is client-side validation for a guidance tool, not a security boundary. A future server-backed design must validate all submitted data again and document retention, consent, and access controls before storing student information.
+
+### Consent and privacy record
+
+New Version 2 assessment access requires a dedicated consent record:
+
+- key: `sibau-degree-advisor:consent:v1`;
+- schema: `1`;
+- displayed versions: `privacy-v1.0` and `consent-v1.0`;
+- contents: anonymous UUID, selected mode, age group, required operational consent, three independent optional choices, guardian-status metadata, derived research-storage eligibility, versions, and timestamp;
+- excluded data: student name, contact details, CNIC, address, marks, interest or aptitude answers, and recommendation results.
+
+Adults who grant optional research consent receive future-ready `eligible` metadata. Adult refusal does not block guidance. Every minor receives `not_eligible_minor_process_required`, including a minor who checks the voluntary research box. Age 16-17 uses `future_approved_process_required`; under 16 uses `required_not_collected`. These values do not create a research database or claim that a guardian or institution has approved participation.
+
+`/assessment` validates the selected mode and operational consent before starting or generating new Version 2 results. If the mode is absent it redirects to `/assessment/mode`; if consent is absent, malformed, outdated, false, or for another mode it redirects to `/consent`. Valid Version 1 drafts may continue without retroactively inventing consent. Retake preserves valid consent for the current tab, while selecting a mode again resets consent and assessment progress.
+
+The compact essential-storage notice is informational, not a cookie-consent banner. Its dismissal uses `sibau-degree-advisor:essential-storage-notice:v1`, separate from every consent category. No analytics or non-essential cookies are loaded.
 
 ### Post-results feedback record
 

@@ -128,6 +128,37 @@ The mode is stored separately from the assessment draft and recommendation resul
 
 The dedicated key is `sibau-degree-advisor:assessment-mode:v1`. Missing mode data is allowed when an otherwise valid Version 1 assessment draft is present. Malformed data, unknown modes, and unsupported versions require a new selection. This separation keeps the existing Version 1 session payloads backward compatible.
 
+## Consent and research-storage eligibility
+
+New Version 2 sessions store privacy and consent separately under `sibau-degree-advisor:consent:v1`. The record uses schema version `1`, privacy policy `privacy-v1.0`, and consent text `consent-v1.0`.
+
+| Field | Purpose |
+| --- | --- |
+| `schemaVersion` | Rejects unsupported consent payload formats. |
+| `participantSessionId` | Client-generated anonymous UUID; never derived from the student name. |
+| `assessmentMode` | The exact `quick` or `detailed` mode covered by consent. |
+| `ageGroup` | `under_16`, `age_16_17`, or `age_18_or_above`. Exact age and date of birth are not collected. |
+| `operationalConsent` | Must be `true` for new Version 2 assessment access. This is not research consent. |
+| `researchConsent` | Independent `granted` or `declined` future research choice. |
+| `followUpContactConsent` | Independent choice only; no contact details are collected. |
+| `analyticsConsent` | Independent future-ready choice; no analytics are loaded. |
+| `guardianConsentStatus` | `not_applicable`, `required_not_collected`, or `future_approved_process_required`. |
+| `researchStorageEligibility` | Derived future-ready metadata; it does not store assessment data. |
+| `privacyPolicyVersion` | Exact notice version displayed to the participant. |
+| `consentTextVersion` | Exact consent wording version displayed. |
+| `consentTimestamp` | Strict ISO timestamp recorded in the current tab. |
+
+Research-storage eligibility values are:
+
+- `eligible`: adult, operational consent granted, optional research consent granted;
+- `not_eligible_no_research_consent`: adult guidance allowed without research use;
+- `not_eligible_minor_process_required`: any minor, regardless of their voluntary research preference;
+- `not_eligible_invalid_consent`: absent or invalid operational consent.
+
+Age 16-17 maps to `future_approved_process_required`. Under 16 maps to `required_not_collected`. Adults map to `not_applicable`. The runtime validator rejects inconsistent combinations, unknown fields, old policy text, malformed timestamps, and minors marked research-eligible.
+
+The consent payload excludes student name, email, phone, CNIC, address, subject marks, interest responses, aptitude responses, recommendation results, health information, religion, political information, and precise location. No permanent data store exists in this stage.
+
 ## RIASEC interest model
 
 Version 2 infrastructure defines six stable RIASEC dimension IDs in this order:

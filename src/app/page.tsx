@@ -60,7 +60,8 @@ export default function Home() {
               </Link>
               <p className="max-w-xs text-sm leading-6 text-slate-500">
                 No account required. Your information stays in the current
-                browser session.
+                browser session. You will review privacy and consent choices
+                before the assessment starts.
               </p>
             </div>
           </div>
@@ -163,7 +164,12 @@ export default function Home() {
       <footer className="border-t border-slate-200 px-5 py-8 sm:px-8 lg:px-10">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-semibold text-slate-700">SIBAU Degree Advisor</p>
-          <p>Independent student guidance project</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/privacy" className="font-bold text-teal-700 underline decoration-2 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2">
+              Privacy and Research Data Notice
+            </Link>
+            <p>Independent student guidance project</p>
+          </div>
         </div>
       </footer>
     </main>

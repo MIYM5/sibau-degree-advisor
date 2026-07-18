@@ -6,7 +6,7 @@ This roadmap keeps SIBAU Degree Advisor small enough for a first full web applic
 
 - Version 1 is preserved on the `main` branch and tag `v1.0.0`.
 - Version 2 development occurs on the `version-2.0` branch.
-- Version 2 includes assessment-mode architecture, RIASEC data infrastructure, the five-scenario Quick Guidance interest activity, the 30-item Detailed Guidance RIASEC interest assessment, five shared objective aptitude tasks, mode-aware recommendation scoring, improved results presentation, and isolated post-results feedback. Eligibility remains unchanged and Version 1 payloads retain their legacy scoring.
+- Version 2 includes assessment-mode architecture, RIASEC data infrastructure, the five-scenario Quick Guidance interest activity, the 30-item Detailed Guidance RIASEC interest assessment, five shared objective aptitude tasks, mode-aware recommendation scoring, improved results presentation, isolated post-results feedback, and a browser-only privacy and consent gate. Eligibility remains unchanged and Version 1 on `main` and tag `v1.0.0` remains preserved.
 
 ## Version 2 staged assessment upgrade
 
@@ -118,6 +118,22 @@ Status: **Complete for temporary Version 2 evaluation**
 - Restore submitted feedback after same-tab refresh and reject duplicate submissions.
 
 This feedback measures perceived relevance, not scientific validity. The current session record is temporary and is not suitable for research analysis across participants or time. Permanent storage is deferred until separate consent, privacy, retention, access, deletion, security, and research-governance work is approved.
+
+### Stage 9 - Privacy, age group, consent, and essential storage
+
+Status: **Complete for browser-only Version 2 architecture; legal and ethics review pending**
+
+- Route mode selection through a dedicated privacy and consent screen.
+- Require age group and operational consent for new Version 2 assessment processing.
+- Keep optional research, follow-up contact, and future analytics choices independent and unselected by default.
+- Allow minors to receive educational guidance while marking all minor records ineligible for research storage.
+- Store strict consent metadata under a dedicated versioned `sessionStorage` key.
+- Publish a complete Privacy and Research Data Notice with explicit policy and consent-text versions.
+- Show an informational essential-storage notice without a fake Accept All control.
+- Preserve valid Version 1 draft access and preserve operational consent during Retake Assessment in the same tab.
+- Add no database, cookies, analytics, trackers, contact fields, or advertising tools.
+
+Research-storage eligibility is future-ready metadata only. Before permanent research collection, the project must identify the formal operator, obtain appropriate legal and institutional ethics review, approve minor and guardian procedures, and define contacts, retention, access, deletion, withdrawal, sharing, incident response, and de-identification limits.
 
 ### Planned later stages
 

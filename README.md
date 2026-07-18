@@ -16,6 +16,8 @@ The results page presents eligible ranks 1â€“3 as **Top Matches** and ranks
 
 Quick and Detailed results now end with optional post-results feedback about perceived interest alignment, personal relevance, and explanation usefulness. Feedback is validated and stored only in a dedicated, versioned `sessionStorage` record. It does not recalculate or change recommendations, and it excludes the student name, contact information, exact marks, and raw assessment responses. This temporary browser storage is not a research database.
 
+New Version 2 assessments now pass through a privacy and informed-consent screen after mode selection. The student selects an age group and grants required operational consent before assessment processing begins. Research, follow-up contact, and future analytics choices are optional, independent, and never preselected. Minor records remain ineligible for research storage until a real approved guardian-consent and institutional-review process exists. These choices are temporary, future-ready metadata only; no permanent applicant or research database has been added.
+
 The Quick and Detailed interest activities and brief aptitude tasks are original project-designed content. They are not official O*NET Interest Profiler items or validated psychometric assessments and require pilot testing and expert review. The previous 18-item aptitude self-assessment and 22-item interest questionnaire remain only for compatible legacy sessions and historical tests.
 
 RIASEC program mappings, component weights, and confidence thresholds are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty, career-guidance, and educational-measurement experts.
@@ -97,9 +99,9 @@ Start the local development server:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. Select **Start Assessment** to open `/assessment/mode`, choose Quick or Detailed Guidance, and then continue to the existing assessment at `/assessment`.
+Open [http://localhost:3000](http://localhost:3000) in your browser. Select **Start Assessment** to open `/assessment/mode`, choose Quick or Detailed Guidance, review privacy and consent at `/consent`, and then continue to `/assessment`. The full notice is available at `/privacy`.
 
-The selected mode uses its own versioned `sessionStorage` record. Assessment answers and generated recommendations continue to use their existing session records so the results page and the **Edit My Answers** action work in the same browser tab. Optional post-results feedback uses the separate key `sibau-degree-advisor:assessment-feedback:v1`; it is temporary, anonymous within the current result session, and never changes the stored recommendation result. **Retake Assessment** clears the assessment, results, and current feedback data while preserving the selected mode. The MVP does not save student profiles or feedback to a database or long-term browser storage.
+The selected mode, consent record, assessment draft, recommendations, optional feedback, and essential-storage-notice dismissal each use separate versioned `sessionStorage` keys. Records are temporary and scoped to the current browser tab. **Retake Assessment** clears the assessment, results, and current feedback while preserving the selected mode and valid operational consent for the same tab. Selecting a mode again resets consent and assessment progress so new Version 2 work cannot bypass the privacy screen. The MVP does not save student profiles, consent records, results, or feedback to a permanent database.
 
 Run project checks:
 
@@ -114,6 +116,7 @@ npm run test:brief-aptitude
 npm run test:recommendation-v2
 npm run test:recommendation-presentation
 npm run test:feedback
+npm run test:consent
 ```
 
 ## License

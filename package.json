@@ -20,6 +20,7 @@
     "test:recommendation-v2": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/recommendation-v2-tests scripts/test-version-2-recommendation.ts && node .next/recommendation-v2-tests/scripts/test-version-2-recommendation.js",
     "test:recommendation-presentation": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/recommendation-presentation-tests scripts/test-recommendation-presentation.ts && node .next/recommendation-presentation-tests/scripts/test-recommendation-presentation.js",
     "test:feedback": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/feedback-tests scripts/test-assessment-feedback.ts && node .next/feedback-tests/scripts/test-assessment-feedback.js",
+    "test:consent": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/consent-tests scripts/test-consent.ts && node .next/consent-tests/scripts/test-consent.js",
     "validate:program-data": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/program-data-validation scripts/validate-program-data.ts src/data/programs.ts src/lib/validate-program-data.ts src/types/program.ts && node .next/program-data-validation/scripts/validate-program-data.js"
   },
   "dependencies": {

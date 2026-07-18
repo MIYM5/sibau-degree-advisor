@@ -8,6 +8,12 @@ import {
   serializeAssessmentModeSession,
 } from "@/lib/assessment-mode-session";
 import {
+  ASSESSMENT_DRAFT_SESSION_KEY,
+  RECOMMENDATION_SESSION_KEY,
+} from "@/lib/assessment-session";
+import { ASSESSMENT_FEEDBACK_SESSION_KEY } from "@/lib/assessment-feedback";
+import { CONSENT_SESSION_KEY } from "@/lib/consent-session";
+import {
   assessmentModeMetadata,
   getAssessmentModeTotalQuestionCount,
   type AssessmentMode,
@@ -38,7 +44,11 @@ export function ModeSelection() {
         ASSESSMENT_MODE_SESSION_KEY,
         serializeAssessmentModeSession(mode),
       );
-      router.push("/assessment");
+      window.sessionStorage.removeItem(CONSENT_SESSION_KEY);
+      window.sessionStorage.removeItem(ASSESSMENT_DRAFT_SESSION_KEY);
+      window.sessionStorage.removeItem(RECOMMENDATION_SESSION_KEY);
+      window.sessionStorage.removeItem(ASSESSMENT_FEEDBACK_SESSION_KEY);
+      router.push("/consent");
     } catch {
       setSelectionError(
         "Your assessment choice could not be saved in this browser session. Please try again.",

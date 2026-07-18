@@ -42,6 +42,11 @@ import {
   resolveAssessmentModeSession,
 } from "@/lib/assessment-mode-session";
 import {
+  CONSENT_SESSION_KEY,
+  canAccessAssessmentWithConsent,
+  resolveConsentAccess,
+} from "@/lib/consent-session";
+import {
   calculateAptitudeAssessment,
   type AptitudeResponses,
 } from "@/lib/aptitude-assessment";
@@ -187,6 +192,24 @@ export function AssessmentFlow() {
 
     if (modeResolution.status === "selection-required") {
       router.replace("/assessment/mode");
+      return;
+    }
+    if (
+      modeResolution.status === "legacy" &&
+      savedDraft?.schemaVersion === 2
+    ) {
+      router.replace("/assessment/mode");
+      return;
+    }
+    if (
+      modeResolution.status === "selected" &&
+      resolveConsentAccess(
+        window.sessionStorage.getItem(CONSENT_SESSION_KEY),
+        modeResolution.mode,
+        savedDraft !== null && savedDraft.schemaVersion !== 2,
+      ) === "consent-required"
+    ) {
+      router.replace("/consent");
       return;
     }
 
@@ -363,6 +386,18 @@ export function AssessmentFlow() {
 
   function viewRecommendations() {
     setRecommendationError(undefined);
+    if (
+      activeMode !== null &&
+      activeMode !== "legacy" &&
+      !usesLegacyAptitude &&
+      !canAccessAssessmentWithConsent(
+        window.sessionStorage.getItem(CONSENT_SESSION_KEY),
+        activeMode,
+      )
+    ) {
+      router.push("/consent");
+      return;
+    }
     if (!completedAssessment) {
       setRecommendationError(
         "The assessment is incomplete. Review the earlier steps and try again.",

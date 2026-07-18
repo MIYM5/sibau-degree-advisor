@@ -138,6 +138,14 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** Collect optional feedback only after results are displayed. Store at most one record per current result session in the dedicated versioned `sessionStorage` key `sibau-degree-advisor:assessment-feedback:v1`. Use client-generated anonymous UUIDs, retain the assessment mode, validate every restored value, and exclude names, contact details, exact marks, and raw assessment responses. Feedback never enters eligibility, scoring, ranking, warnings, or confidence calculations.
 - **Consequences:** Same-tab refresh can restore a submission, while Retake Assessment clears the current feedback record. The data remains temporary and measures perceived relevance rather than scientific validity. Any permanent research storage requires separate consent, privacy, retention, access, deletion, security, and governance decisions.
 
+## D-018 - Gate new Version 2 assessments with separate operational consent
+
+- **Status:** Accepted for browser-only Version 2; legal and institutional ethics review remain pending
+- **Date:** 2026-07-18
+- **Context:** The project needs plain-language privacy information, age-group handling, and independent consent categories before any future research-storage design. It still has no approved permanent database, guardian-consent procedure, analytics, or contact collection.
+- **Decision:** Route new Version 2 users from mode selection to `/consent`. Require age group and operational consent for temporary assessment processing. Record optional research, follow-up contact, and future analytics choices independently and never preselect them. Store only a strict versioned consent record under `sibau-degree-advisor:consent:v1`. Derive research-storage eligibility without sending data anywhere. Treat every minor as ineligible until a real approved guardian and institutional process exists. Preserve valid Version 1 draft compatibility. Preserve operational consent during Retake Assessment in the same tab; selecting a mode again explicitly resets consent and assessment progress.
+- **Consequences:** Operational consent cannot be confused with research participation, and research refusal does not block guidance. Consent, draft, results, and feedback remain separate. The essential-storage notice is informational and has its own dismissal key. No cookies, analytics, trackers, contact details, or permanent storage are added. Policy-owner, legal basis, contacts, retention, withdrawal, ethics approval, and minor procedures remain unresolved placeholders.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?
@@ -149,3 +157,8 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - What test framework and data-validation library should be selected during Next.js setup?
 - What license should the repository use?
 - When, if ever, does the product need persistent data, authentication, or Supabase?
+- Which person or institution will be the formal service operator and data controller?
+- Which jurisdiction-specific legal basis, privacy rights, and complaint route apply?
+- Which ethics committee and institutional authority must approve future research?
+- What guardian-permission, minor-assent, safeguarding, and withdrawal process will be approved?
+- What permanent research retention, deletion, access, sharing, and de-identification rules will apply?

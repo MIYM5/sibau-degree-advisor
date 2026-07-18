@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { EssentialStorageNotice } from "@/components/consent/essential-storage-notice";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <EssentialStorageNotice />
+      </body>
     </html>
   );
 }
