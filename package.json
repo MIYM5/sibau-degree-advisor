@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:eligibility": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/eligibility-tests scripts/test-eligibility-engine.ts src/lib/eligibility-engine.ts src/data/programs.ts src/types/program.ts src/types/student.ts src/types/recommendation.ts && node .next/eligibility-tests/scripts/test-eligibility-engine.js",
     "validate:program-data": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/program-data-validation scripts/validate-program-data.ts src/data/programs.ts src/lib/validate-program-data.ts src/types/program.ts && node .next/program-data-validation/scripts/validate-program-data.js"
   },
   "dependencies": {

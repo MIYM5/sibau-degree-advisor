@@ -66,6 +66,14 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** Do not initialize Next.js, install packages, commit, or push during this task.
 - **Consequences:** The repository remains documentation-and-data only until explicit approval.
 
+## D-009 — Apply conservative eligibility-result precedence
+
+- **Status:** Accepted for MVP development; current-advertisement verification remains required
+- **Date:** 2026-07-18
+- **Context:** Eligibility must distinguish confirmed hard failures from source uncertainty. The committed engineering records are conservatively classified `verification_required`, while the approved MVP explicitly defines their restricted group, subject, and threshold behavior.
+- **Decision:** A failed stored hard rule returns Not eligible. An explicitly approved working-MVP outcome returns Eligible when its hard rules pass: Pre-Medical access to included non-engineering programs, and the restricted rules for BE Electrical Engineering and BE Computer Systems Engineering. Other passing records classified `verification_required` return Verification required. Overall percentage is calculated as total obtained marks divided by total possible marks across the supplied subjects.
+- **Consequences:** The engine never uses suitability weights for eligibility. Passing engineering cases remain usable for MVP testing without presenting their rules as final official policy, while other ambiguous evidence remains visible for verification.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?
