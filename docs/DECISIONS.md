@@ -130,6 +130,14 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** Preserve engine scores, ranks, ordering, eligibility, and warnings. In a pure presentation adapter, show ranks 1â€“3 as Top Matches and ranks 4â€“5 as Alternative Options. Compare each eligible result from rank 2 onward only with the immediately preceding eligible result: below 3 is approximately equal, 3 to below 7 is moderately stronger, and 7 or more is clearly stronger. Show Version 2 RIASEC and brief aptitude evidence in a final profile/methodology section while keeping Version 1 displayable.
 - **Consequences:** The results page becomes easier to scan without changing recommendation behavior. Difference labels are guidance, not statistical proof. Verification-required and not-eligible programs remain unranked, engine warnings remain prominent, and the profile summary must retain RIASEC and five-task limitations.
 
+## D-017 - Keep optional post-results feedback anonymous, temporary, and separate
+
+- **Status:** Accepted for Version 2 evaluation; research persistence is not approved
+- **Date:** 2026-07-18
+- **Context:** Quick and Detailed Guidance need a small way to compare perceived relevance and explanation usefulness without allowing feedback to influence a student's current recommendation result or creating an undeclared research database.
+- **Decision:** Collect optional feedback only after results are displayed. Store at most one record per current result session in the dedicated versioned `sessionStorage` key `sibau-degree-advisor:assessment-feedback:v1`. Use client-generated anonymous UUIDs, retain the assessment mode, validate every restored value, and exclude names, contact details, exact marks, and raw assessment responses. Feedback never enters eligibility, scoring, ranking, warnings, or confidence calculations.
+- **Consequences:** Same-tab refresh can restore a submission, while Retake Assessment clears the current feedback record. The data remains temporary and measures perceived relevance rather than scientific validity. Any permanent research storage requires separate consent, privacy, retention, access, deletion, security, and governance decisions.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?

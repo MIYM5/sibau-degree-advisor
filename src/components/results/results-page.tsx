@@ -16,12 +16,16 @@ import {
   parseRecommendationSessionPayload,
   type RecommendationSessionPayload,
 } from "@/lib/assessment-session";
+import { ASSESSMENT_FEEDBACK_SESSION_KEY } from "@/lib/assessment-feedback";
+import type { AssessmentFeedbackPlacement } from "@/types/assessment-feedback";
+import type { ProgramId } from "@/types/program";
 import type {
   PresentedEligibleRecommendation,
   RecommendationResult,
 } from "@/types/recommendation";
 
 import { SiteHeader } from "../site-header";
+import { AssessmentFeedbackForm } from "./assessment-feedback";
 import { EligibilitySummary } from "./eligibility-summary";
 import { InstitutionalFitWarning } from "./institutional-fit-warning";
 import { ProfileSummary } from "./profile-summary";
@@ -74,6 +78,7 @@ export function ResultsPage() {
   function retakeAssessment() {
     window.sessionStorage.removeItem(ASSESSMENT_DRAFT_SESSION_KEY);
     window.sessionStorage.removeItem(RECOMMENDATION_SESSION_KEY);
+    window.sessionStorage.removeItem(ASSESSMENT_FEEDBACK_SESSION_KEY);
     router.push("/assessment");
   }
 
@@ -140,6 +145,24 @@ export function ResultsPage() {
       : presentation.alternativeOptions.length < 2
         ? "Fewer than five eligible programs are available, so no empty alternative cards are shown."
         : undefined;
+
+  const feedbackPlacements: Partial<
+    Record<ProgramId, AssessmentFeedbackPlacement>
+  > = Object.fromEntries(
+    programs.map((program) => [program.id, "not_recommended"]),
+  );
+  for (const item of presentation.topMatches) {
+    feedbackPlacements[item.recommendation.programId] = "top_three";
+  }
+  for (const item of presentation.alternativeOptions) {
+    feedbackPlacements[item.recommendation.programId] = "alternative_options";
+  }
+  for (const item of presentation.verificationRequired) {
+    feedbackPlacements[item.programId] = "verification_required";
+  }
+  for (const item of presentation.notEligible) {
+    feedbackPlacements[item.programId] = "not_eligible";
+  }
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -332,6 +355,14 @@ export function ResultsPage() {
         </section>
 
         <ProfileSummary summary={profileSummary} />
+
+        {payload.version === 2 && (
+          <AssessmentFeedbackForm
+            assessmentMode={payload.recommendationInput.assessmentMode}
+            recommendationCreatedAt={payload.createdAt}
+            visiblePlacements={feedbackPlacements}
+          />
+        )}
       </div>
     </main>
   );

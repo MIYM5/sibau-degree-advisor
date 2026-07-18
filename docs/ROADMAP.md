@@ -6,7 +6,7 @@ This roadmap keeps SIBAU Degree Advisor small enough for a first full web applic
 
 - Version 1 is preserved on the `main` branch and tag `v1.0.0`.
 - Version 2 development occurs on the `version-2.0` branch.
-- Version 2 includes assessment-mode architecture, RIASEC data infrastructure, the five-scenario Quick Guidance interest activity, the 30-item Detailed Guidance RIASEC interest assessment, five shared objective aptitude tasks, and mode-aware recommendation scoring. Eligibility remains unchanged and Version 1 payloads retain their legacy scoring.
+- Version 2 includes assessment-mode architecture, RIASEC data infrastructure, the five-scenario Quick Guidance interest activity, the 30-item Detailed Guidance RIASEC interest assessment, five shared objective aptitude tasks, mode-aware recommendation scoring, improved results presentation, and isolated post-results feedback. Eligibility remains unchanged and Version 1 payloads retain their legacy scoring.
 
 ## Version 2 staged assessment upgrade
 
@@ -104,6 +104,20 @@ Status: **Complete for Version 2 presentation review**
 - Validate presentation input and cover empty and short eligible lists without placeholder cards.
 
 The grouping and difference thresholds are presentation assumptions. They do not imply statistical significance or change the underlying recommendation model.
+
+### Stage 8 - Optional post-results feedback
+
+Status: **Complete for temporary Version 2 evaluation**
+
+- Show a short optional feedback form only after Quick or Detailed recommendations are displayed.
+- Measure perceived interest alignment, personal relevance, and explanation usefulness on validated 1-5 scales.
+- Record the student's confirmed placement of a previously considered program or field.
+- Store at most one anonymous feedback record for the current result session under a dedicated versioned `sessionStorage` key.
+- Keep feedback separate from assessment answers, eligibility, recommendation scores, ranks, warnings, and confidence.
+- Exclude names, contact information, exact marks, and raw RIASEC or aptitude responses.
+- Restore submitted feedback after same-tab refresh and reject duplicate submissions.
+
+This feedback measures perceived relevance, not scientific validity. The current session record is temporary and is not suitable for research analysis across participants or time. Permanent storage is deferred until separate consent, privacy, retention, access, deletion, security, and research-governance work is approved.
 
 ### Planned later stages
 

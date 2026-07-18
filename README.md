@@ -14,6 +14,8 @@ Version 2 evidence is now connected to mode-aware recommendations. Quick Guidanc
 
 The results page presents eligible ranks 1â€“3 as **Top Matches** and ranks 4â€“5 as **Alternative Options**, followed by separate unranked sections for admission verification and current ineligibility. Score-gap labels compare each eligible result only with the result immediately above it. These labels are display guidance, not statistical proof, and do not change scores or ranks.
 
+Quick and Detailed results now end with optional post-results feedback about perceived interest alignment, personal relevance, and explanation usefulness. Feedback is validated and stored only in a dedicated, versioned `sessionStorage` record. It does not recalculate or change recommendations, and it excludes the student name, contact information, exact marks, and raw assessment responses. This temporary browser storage is not a research database.
+
 The Quick and Detailed interest activities and brief aptitude tasks are original project-designed content. They are not official O*NET Interest Profiler items or validated psychometric assessments and require pilot testing and expert review. The previous 18-item aptitude self-assessment and 22-item interest questionnaire remain only for compatible legacy sessions and historical tests.
 
 RIASEC program mappings, component weights, and confidence thresholds are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty, career-guidance, and educational-measurement experts.
@@ -97,7 +99,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. Select **Start Assessment** to open `/assessment/mode`, choose Quick or Detailed Guidance, and then continue to the existing assessment at `/assessment`.
 
-The selected mode uses its own versioned `sessionStorage` record. Assessment answers and generated recommendations continue to use their existing session records so the results page and the **Edit My Answers** action work in the same browser tab. **Retake Assessment** clears the assessment and results data while preserving the selected mode. The MVP does not save student profiles to a database or long-term browser storage.
+The selected mode uses its own versioned `sessionStorage` record. Assessment answers and generated recommendations continue to use their existing session records so the results page and the **Edit My Answers** action work in the same browser tab. Optional post-results feedback uses the separate key `sibau-degree-advisor:assessment-feedback:v1`; it is temporary, anonymous within the current result session, and never changes the stored recommendation result. **Retake Assessment** clears the assessment, results, and current feedback data while preserving the selected mode. The MVP does not save student profiles or feedback to a database or long-term browser storage.
 
 Run project checks:
 
@@ -111,6 +113,7 @@ npm run test:detailed-interest
 npm run test:brief-aptitude
 npm run test:recommendation-v2
 npm run test:recommendation-presentation
+npm run test:feedback
 ```
 
 ## License

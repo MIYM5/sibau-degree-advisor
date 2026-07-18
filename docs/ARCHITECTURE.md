@@ -17,6 +17,7 @@ App Router pages and reusable React components will handle:
 - interest and aptitude questions;
 - results, explanations, warnings, and source links;
 - presentation-only grouping of ranked results and score-gap labels;
+- optional post-results feedback that is isolated from recommendation behavior;
 - accessible loading, validation, and error states.
 
 Presentation components should display decisions, not contain admission rules.
@@ -82,6 +83,7 @@ scripts/                # Development validation and focused tests
 8. A versioned payload containing the editable draft, strict recommendation input, scoring metadata, and generated result is written to browser `sessionStorage`. Version 1 payloads retain their original profile-based shape.
 9. `/results` validates that payload, then `recommendation-presentation.ts` groups existing eligible ranks 1â€“3 as Top Matches and ranks 4â€“5 as Alternative Options. It compares adjacent eligible scores for display without sorting or recalculating them.
 10. The page shows engine warnings before recommendation cards, keeps verification-required and not-eligible programs unranked, and finishes with a mode-aware student-profile and methodology summary. Version 1 payloads use a compatible legacy summary.
+11. After Quick or Detailed recommendations are visible, the student may submit or skip a short feedback form. Feedback uses its own validator and session key and never calls eligibility, scoring, ranking, or confidence logic.
 
 The engine runs only after final Review confirmation. The interface does not copy eligibility or scoring rules into React components.
 
@@ -107,6 +109,21 @@ The current MVP uses `sessionStorage` because `/assessment` and `/results` are s
 - Opening `/results` without valid session data shows a neutral empty state.
 
 This is client-side validation for a guidance tool, not a security boundary. A future server-backed design must validate all submitted data again and document retention, consent, and access controls before storing student information.
+
+### Post-results feedback record
+
+Quick and Detailed results use another dedicated session record for optional feedback:
+
+- key: `sibau-degree-advisor:assessment-feedback:v1`;
+- schema version: `1`;
+- contents: an anonymous feedback/session ID, the recommendation-session timestamp used to keep the record tied to the current result, and at most one validated feedback record;
+- excluded data: student name, contact details, exact subject marks, raw RIASEC responses, and raw aptitude responses;
+- duplicate behavior: a second submission for the same assessment session is rejected;
+- refresh behavior: a valid submitted record is restored in the same browser tab and shows confirmation instead of a new form.
+
+The feedback component appears only after Version 2 Quick or Detailed results have been displayed. It can suggest the visible placement of a selected SIBAU program, but the student confirms the value. It does not infer a placement for an outside-SIBAU field, no previous choice, or prefer not to answer.
+
+Feedback measures perceived relevance and explanation usefulness. It does not establish scientific validity, is not included in recommendation or confidence calculations, and is not permanent research storage. Any later research database requires a separate decision covering informed consent, privacy notice, retention, access, deletion, security, and ethical review where applicable.
 
 ### Assessment-mode record
 

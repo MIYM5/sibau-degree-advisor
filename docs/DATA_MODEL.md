@@ -228,6 +228,30 @@ After final Review confirmation, the app stores a versioned session payload cont
 
 The results route checks the payload structure, known program IDs, score ranges, eligibility/rank rules, and consistency between the draft and rebuilt profile. Invalid data produces the assessment empty state. `sessionStorage` is cleared by **Retake Assessment** and normally ends with the browser-tab session; it is not a database or a guarantee of confidentiality on a shared device.
 
+## Post-results assessment feedback
+
+Feedback is collected only after Quick or Detailed recommendations are displayed. It is a separate evaluation record, not part of the student profile, RIASEC result, aptitude result, eligibility outcome, or recommendation result.
+
+| Field | Purpose |
+| --- | --- |
+| `schemaVersion` | Version `1`, used to reject incompatible future records. |
+| `feedbackId` | Client-generated, non-sequential anonymous UUID. |
+| `assessmentSessionId` | Anonymous UUID linking one feedback record to the current result session. It is never based on the student name. |
+| `assessmentMode` | `quick` or `detailed`, allowing later comparison of perceived usefulness by mode. |
+| `interestAlignmentRating` | Whole-number 1-5 response about perceived interest alignment. |
+| `personalRelevanceRating` | Whole-number 1-5 response about whether at least one recommendation feels personally relevant. |
+| `explanationUsefulnessRating` | Whole-number 1-5 response about the usefulness of program-match explanations. |
+| `previouslyConsideredProgramId` | One known SIBAU program ID, or `null`. |
+| `outsideSibauField` | True only when the previous choice was outside the 14 included SIBAU programs. |
+| `noPreviousChoice` | True only when the student had no previous program in mind. |
+| `expectedChoicePlacement` | Confirmed result group, no-choice value, or prefer-not-to-answer value. |
+| `optionalComment` | Optional trimmed text of at most 300 characters; empty text is omitted. |
+| `submittedAt` | Valid ISO timestamp for temporary session behavior. |
+
+The feedback payload deliberately excludes student name, email, phone, CNIC, address, exact subject marks, raw RIASEC responses, and raw aptitude responses. Its runtime validator rejects unknown programs, modes, placements, schema versions, invalid timestamps, invalid ratings, comments over 300 characters, malformed values, and inconsistent previous-choice combinations.
+
+`AssessmentFeedbackSessionPayload` is stored only under `sibau-degree-advisor:assessment-feedback:v1`. It contains the anonymous assessment session ID, the current recommendation-session timestamp, and either one validated feedback record or `null`. It is separate from the assessment draft and recommendation payload. This same-tab storage is temporary and is not a research database.
+
 ## Subject mark
 
 | Field | Purpose |
