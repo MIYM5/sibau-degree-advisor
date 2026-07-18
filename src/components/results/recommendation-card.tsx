@@ -1,10 +1,14 @@
 import type { DegreeProgram } from "@/types/program";
 import type { RecommendationResult } from "@/types/recommendation";
+import type { RecommendationComponentWeights } from "@/types/recommendation";
 
 interface RecommendationCardProps {
   recommendation: RecommendationResult;
   program: DegreeProgram;
   variant?: "ranked" | "verification";
+  componentWeights?: RecommendationComponentWeights;
+  interestLabel?: string;
+  aptitudeLabel?: string;
 }
 
 function score(value: number): string {
@@ -15,13 +19,28 @@ export function RecommendationCard({
   recommendation,
   program,
   variant = "ranked",
+  componentWeights = { academic: 0.5, interest: 0.3, aptitude: 0.2 },
+  interestLabel = "Interests",
+  aptitudeLabel = "Aptitude",
 }: RecommendationCardProps) {
   const isRanked = recommendation.eligibilityStatus === "Eligible";
   const scoreItems = [
-    { label: "Academic", value: recommendation.academicScore, weight: "50%" },
-    { label: "Interests", value: recommendation.interestScore, weight: "30%" },
-    { label: "Aptitude", value: recommendation.aptitudeScore, weight: "20%" },
-  ] as const;
+    {
+      label: "Academic",
+      value: recommendation.academicScore,
+      weight: `${componentWeights.academic * 100}%`,
+    },
+    {
+      label: interestLabel,
+      value: recommendation.interestScore,
+      weight: `${componentWeights.interest * 100}%`,
+    },
+    {
+      label: aptitudeLabel,
+      value: recommendation.aptitudeScore,
+      weight: `${componentWeights.aptitude * 100}%`,
+    },
+  ];
 
   return (
     <article

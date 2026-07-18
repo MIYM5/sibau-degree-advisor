@@ -6,7 +6,7 @@ This roadmap keeps SIBAU Degree Advisor small enough for a first full web applic
 
 - Version 1 is preserved on the `main` branch and tag `v1.0.0`.
 - Version 2 development occurs on the `version-2.0` branch.
-- Version 2 currently includes assessment-mode architecture, RIASEC data infrastructure, the five-scenario Quick Guidance interest activity, the 30-item Detailed Guidance RIASEC interest assessment, and five shared objective aptitude tasks. All new assessment evidence remains review-only; existing eligibility and recommendation behavior remains active.
+- Version 2 includes assessment-mode architecture, RIASEC data infrastructure, the five-scenario Quick Guidance interest activity, the 30-item Detailed Guidance RIASEC interest assessment, five shared objective aptitude tasks, and mode-aware recommendation scoring. Eligibility remains unchanged and Version 1 payloads retain their legacy scoring.
 
 ## Version 2 staged assessment upgrade
 
@@ -24,46 +24,46 @@ Status: **Complete**
 
 ### Stage 2 — RIASEC domain and program mappings
 
-Status: **Complete as inactive infrastructure; expert review pending**
+Status: **Complete and active in Version 2 scoring; expert review pending**
 
 - Define stable Realistic, Investigative, Artistic, Social, Enterprising, and Conventional IDs.
 - Define complete 0–100 profiles, deterministic top-three ordering, and Holland-style codes.
 - Add one explicit six-dimension mapping totaling 100 for each of the 14 current programs.
 - Validate program coverage, IDs, dimensions, ranges, totals, and stable ordering.
-- Keep the new model disconnected from active scoring and results.
+- Keep the model separate from legacy Version 1 interest dimensions.
 
-The mappings are project-model assumptions, not official SIBAU weightages, and were not supplied or endorsed by O*NET. Faculty and career-guidance experts must review them before activation.
+The mappings are project-model assumptions, not official SIBAU weightages, and were not supplied or endorsed by O*NET. Their Version 2 activation does not remove the need for faculty and career-guidance review.
 
 ### Stage 3 — Quick Guidance RIASEC interests
 
-Status: **Complete for review-only use; expert and usability review pending**
+Status: **Complete and active in Quick scoring; expert and usability review pending**
 
 - Add five original broad scenarios covering every RIASEC dimension.
 - Require different most, second, and least preferences in each scenario.
 - Normalize raw scores to 0–100 and generate the deterministic preliminary profile.
 - Preserve responses across navigation and same-session result editing.
 - Display six scores, top three, code, evidence label, and disclaimer during review.
-- Keep Quick RIASEC values disconnected from recommendation scoring.
+- Keep Quick RIASEC values separate from legacy Version 1 interest dimensions.
 
 Quick Guidance uses the shared five-task aptitude exercise recorded in Stage 5. The interest activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
 
 ### Stage 4 â€” Detailed Guidance RIASEC interests
 
-Status: **Complete for review-only use; pilot testing and expert review pending**
+Status: **Complete and active in Detailed scoring; pilot testing and expert review pending**
 
 - Add 30 original activity-preference questions, with five for each RIASEC dimension.
 - Map the five response choices to 0, 25, 50, 75, and 100 before averaging by dimension.
 - Validate complete coverage, IDs, order, dimensions, response values, and malformed data.
 - Preserve answers across navigation and same-session result editing.
 - Display six scores, coverage, top three, code, explanation, evidence label, and disclaimer during review.
-- Keep Detailed RIASEC values disconnected from recommendation scoring.
+- Keep Detailed RIASEC values separate from legacy Version 1 interest dimensions.
 - Preserve the Version 1 interest questionnaire for legacy sessions and historical tests.
 
 Detailed Guidance uses the shared five-task aptitude exercise recorded in Stage 5. The project-designed interest instrument is not the official O*NET Interest Profiler or a validated psychometric assessment.
 
 ### Stage 5 â€” Shared brief aptitude exercise
 
-Status: **Complete for review-only use; pilot testing and expert review pending**
+Status: **Complete and active as limited Version 2 evidence; pilot testing and expert review pending**
 
 - Add five original objective multiple-choice tasks covering selected reasoning areas.
 - Use one shared task bank for Quick and Detailed Guidance.
@@ -72,16 +72,31 @@ Status: **Complete for review-only use; pilot testing and expert review pending*
 - Display per-task Correct/Incorrect outcomes without dimension-level aptitude percentages.
 - Store new responses in version-2 session and recommendation payloads.
 - Preserve the Version 1 18-item aptitude modules for older sessions and historical tests.
-- Keep brief aptitude results disconnected from recommendation scoring.
+- Use only the overall percentage at 15%; do not invent dimension-level aptitude scores.
 
 The five tasks are original project content, not a validated psychometric instrument or a complete measure of aptitude. Client-side answer-key separation is not a security boundary.
+
+### Stage 6 â€” Mode-aware recommendation scoring
+
+Status: **Complete for Version 2 development; expert validation pending**
+
+- Use the strict Quick 55/30/15 and Detailed 50/35/15 formulas.
+- Score all six student RIASEC dimensions against the six-dimension program mappings.
+- Use the same overall five-task aptitude percentage as a limited 15% indicator for every program.
+- Store and validate mode, scoring model, questionnaire version, and evidence labels.
+- Reject incomplete or inconsistent Version 2 evidence without neutral fallbacks.
+- Keep Quick confidence at Low or Medium and allow Detailed High only under documented complete-evidence and alignment assumptions.
+- Preserve Version 1 50/30/20 behavior and payload parsing.
+- Keep eligibility separate, process all 14 programs, and rank only Eligible results.
+
+The activated formulas, mappings, and confidence thresholds remain project assumptions. They are not official SIBAU weightages or validated psychometric standards.
 
 ### Planned later stages
 
 - Review the RIASEC program mappings with faculty and career-guidance experts.
 - Pilot and review the five aptitude tasks with relevant educational-measurement experts.
-- Define how reviewed mode-specific RIASEC evidence maps into the existing scoring dimensions.
-- Add validation and regression tests before activating new scoring inputs.
+- Pilot the assessments and review scoring assumptions with relevant experts.
+- Revisit confidence thresholds only with documented evidence and regression tests.
 
 The planned question counts and evidence labels are recommendation-model design assumptions. New content must be reviewed before it replaces the current questionnaires.
 

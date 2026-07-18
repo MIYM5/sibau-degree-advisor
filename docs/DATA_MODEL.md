@@ -145,7 +145,7 @@ Version 2 infrastructure defines six stable RIASEC dimension IDs in this order:
 
 `ProgramRiasecWeights` links one existing `ProgramId` to exactly six weights totaling 100. All 14 current programs have one explicit mapping. Validation rejects unknown or duplicate programs, missing or extra dimensions, out-of-range values, incorrect totals, and changes to the stable dimension order.
 
-These mappings are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty and career-guidance experts. They are not connected to `StudentProfile`, active interest scoring, or recommendation results yet.
+These mappings are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty and career-guidance experts. Version 2 uses them directly from the native RIASEC result; they are not copied into `StudentProfile.interestScores` and cannot affect eligibility.
 
 ## Quick Guidance interest assessment
 
@@ -160,7 +160,7 @@ Quick Guidance contains exactly five scenarios: School project, Free afternoon, 
 
 The validator rejects unknown scenarios or choices, choices from another scenario, duplicate scenario responses, repeated preferences, missing positions, incomplete coverage, and malformed data. Complete results use the existing deterministic R-I-A-S-E-C tie order to create the top three and three-letter code.
 
-Quick RIASEC scores are review-only. They do not replace `StudentProfile.interestScores` or enter recommendation scoring yet. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
+Quick RIASEC scores remain separate from `StudentProfile.interestScores`. A complete Version 2 Quick input sends the native six scores to RIASEC scoring and identifies the evidence as `Preliminary`. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
 
 ## Detailed Guidance interest assessment
 
@@ -175,7 +175,7 @@ Detailed Guidance contains exactly 30 original activity-preference questions: fi
 
 The validator rejects unknown or duplicate question responses, missing questions, non-integer or out-of-range values, malformed input, duplicate IDs, non-sequential orders, and any dimension without exactly five questions. Complete results use the existing deterministic R-I-A-S-E-C tie order.
 
-Detailed RIASEC scores are review-only and use the evidence label `Stronger interest evidence`. They do not replace `StudentProfile.interestScores`, enter recommendation scoring, or activate the program RIASEC mappings. Version 1 question data and scoring remain for valid legacy session payloads and historical tests.
+Detailed RIASEC scores use the evidence label `Stronger interest evidence`. A complete Version 2 Detailed input sends the native six scores to RIASEC scoring without replacing `StudentProfile.interestScores`. Version 1 question data and scoring remain for valid legacy session payloads and historical tests.
 
 These questions are original project-designed items informed by RIASEC. They are not official O*NET Interest Profiler items or a validated psychometric assessment and require pilot testing and expert review.
 
@@ -193,7 +193,25 @@ Version 2 uses exactly five original objective multiple-choice tasks: Numerical,
 
 Validation rejects unknown or duplicate task responses, unknown choices, choices from another task, missing tasks, and malformed data. Correct answers receive one point and incorrect answers receive zero. The result never converts a single task into a complete dimension score; review displays outcomes such as `Numerical task: Correct`.
 
-The five-task result is review-only. It is not copied into `StudentProfile.aptitudeScores` or used by recommendation scoring. The exercise is original project content, is not a validated psychometric instrument, and provides only limited evidence. The answer key is present in downloaded client-side MVP code, so separating it from the UI is an architecture boundary rather than a security guarantee.
+The five-task result is not copied into `StudentProfile.aptitudeScores`. Version 2 uses its overall percentage as the same 15% limited indicator for every program; it never invents per-program aptitude dimensions. The exercise is original project content, is not a validated psychometric instrument, and provides only limited evidence. The answer key is present in downloaded client-side MVP code, so separating it from the UI is an architecture boundary rather than a security guarantee.
+
+## Version 2 recommendation input
+
+Version 2 uses a discriminated union instead of placing RIASEC evidence in legacy score fields:
+
+| Field | Purpose |
+| --- | --- |
+| `version` | Always `2`. |
+| `assessmentMode` | `quick` or `detailed`; selects the formula and evidence contract. |
+| `academicProfile` | Reuses the name, Intermediate group, and `SubjectMark` list needed by academic scoring and eligibility. |
+| `riasecResult` | Complete Quick or Detailed native RIASEC assessment result. |
+| `briefAptitudeResult` | Complete shared five-task result. |
+| `scoringModelVersion` | Exact mode/formula identifier. |
+| `questionnaireVersion` | Exact mode-specific question-bank combination. |
+| `riasecEvidenceLabel` | `Preliminary` or `Stronger interest evidence`. |
+| `aptitudeEvidenceLabel` | Always `Limited` for the five-task exercise. |
+
+Unknown modes, missing dimensions, invalid scores, missing evidence, and mismatched versions are rejected before recommendations are generated.
 
 ## Recommendation session payload
 
@@ -204,7 +222,8 @@ After final Review confirmation, the app stores a versioned session payload cont
 | `version` | Payload format version used to reject incompatible data. Legacy and pre-brief payloads use `1`; new brief-aptitude payloads use `2`. |
 | `createdAt` | ISO timestamp for the browser-session handoff. |
 | `assessmentDraft` | Editable values used by **Edit My Answers**. |
-| `studentProfile` | Validated, normalized profile passed to the recommendation engine. |
+| `studentProfile` | Version 1 only: validated legacy profile passed to 50/30/20 scoring. |
+| `recommendationInput` | Version 2 only: validated mode-aware academic, RIASEC, and brief aptitude evidence. |
 | `recommendationResult` | Complete engine output for the results route. |
 
 The results route checks the payload structure, known program IDs, score ranges, eligibility/rank rules, and consistency between the draft and rebuilt profile. Invalid data produces the assessment empty state. `sessionStorage` is cleared by **Retake Assessment** and normally ends with the browser-tab session; it is not a database or a guarantee of confidentiality on a shared device.
@@ -235,6 +254,8 @@ The results route checks the payload structure, known program IDs, score ranges,
 | `rank` | Numeric rank for an eligible program; `null` for other eligibility states. |
 | `reasons` | Plain-language reasons supporting the result. |
 | `improvementAreas` | Preparation areas that do not override hard eligibility. |
+
+Version 2 engine results also store the assessment mode, scoring-model version, questionnaire version, RIASEC evidence label, aptitude evidence label, and component weights. These fields make payload mismatches detectable rather than allowing a silent fallback.
 
 All these scores and weights are model assumptions, not official Sukkur IBA University admission weightages.
 

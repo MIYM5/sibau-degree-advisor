@@ -8,13 +8,13 @@ SIBAU Degree Advisor is an independent web application project that will help pr
 
 Version 1 remains preserved on the `main` branch and at tag `v1.0.0`. Version 2 development is taking place on the `version-2.0` branch.
 
-The repository contains the approved documentation foundation, the Excel knowledge base, typed program data, validated eligibility and recommendation engines, and a responsive end-to-end frontend flow. Version 2 now includes the architecture for **Quick Guidance** and **Detailed Guidance**, a typed six-dimension RIASEC model, explicit RIASEC mappings for all 14 programs, the five-scenario Quick Guidance interest activity, and the 30-item Detailed Guidance RIASEC interest assessment.
+The repository contains the approved documentation foundation, protected Excel knowledge base, typed program data, validated eligibility and recommendation engines, and a responsive end-to-end frontend flow. Version 2 provides **Quick Guidance** and **Detailed Guidance**, a typed six-dimension RIASEC model, explicit RIASEC mappings for all 14 programs, the five-scenario Quick Guidance activity, the 30-item Detailed Guidance assessment, and five shared objective aptitude tasks.
 
-Both modes display their RIASEC scores and three-letter profile during review, but those values are not yet connected to recommendation scoring. Quick Guidance retains its approved five-scenario activity. Detailed Guidance uses 30 original activity-preference questions, with exactly five per RIASEC dimension and a `Stronger interest evidence` label. Both modes now use the same five objective aptitude tasks and display only per-task outcomes, an overall score, and `Limited` confidence. The new aptitude result is also review-only and does not enter recommendation scoring.
+Version 2 evidence is now connected to mode-aware recommendations. Quick Guidance uses 55% academic suitability, 30% RIASEC alignment, and 15% brief aptitude. Detailed Guidance uses 50% academic suitability, 35% RIASEC alignment, and 15% brief aptitude. The five-task aptitude result remains labeled `Limited`; Quick confidence can never exceed Medium. Valid Version 1 sessions continue to use the original 50/30/20 model.
 
 The Quick and Detailed interest activities and brief aptitude tasks are original project-designed content. They are not official O*NET Interest Profiler items or validated psychometric assessments and require pilot testing and expert review. The previous 18-item aptitude self-assessment and 22-item interest questionnaire remain only for compatible legacy sessions and historical tests.
 
-RIASEC program mappings are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty and career-guidance experts before they influence recommendations.
+RIASEC program mappings, component weights, and confidence thresholds are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty, career-guidance, and educational-measurement experts.
 
 ## MVP principles
 
@@ -107,6 +107,7 @@ npm run test:riasec-data
 npm run test:quick-interest
 npm run test:detailed-interest
 npm run test:brief-aptitude
+npm run test:recommendation-v2
 ```
 
 ## License

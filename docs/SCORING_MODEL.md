@@ -87,7 +87,13 @@ DetailedDimensionScore = sum(mapped response scores) / valid responses in dimens
 
 Overall coverage is the number of valid answers divided by 30 and expressed as a percentage. Per-dimension coverage is the number of valid answers divided by five. The active flow requires 100% coverage before continuing. Full precision is preserved internally, and the existing deterministic R-I-A-S-E-C tie order generates the top three and three-letter code. Complete Detailed results use the evidence label `Stronger interest evidence`.
 
-No active recommendation formula changes in this stage. Quick and Detailed RIASEC scores are not copied into `StudentProfile.interestScores`, matched against program RIASEC mappings, or sent to the recommendation engine. The engine's existing missing-interest handling applies to new Quick and Detailed sessions. Valid legacy Version 1 sessions still use their original 11 interest dimensions and scoring.
+Version 2 sends complete Quick or Detailed RIASEC scores directly to the six-dimension program mapping. Every student dimension must be finite and between 0 and 100, every program mapping must contain exactly the same six dimensions and total 100, and the calculation preserves full precision:
+
+```text
+RIASECInterestScore = sum(student dimension score Ã— program dimension weight / 100)
+```
+
+Missing or malformed Version 2 evidence is rejected. It is not replaced with the Version 1 neutral placeholder. Valid legacy Version 1 sessions still use their original 11 interest dimensions and missing-evidence behavior.
 
 The Detailed questions are original project-designed items informed by RIASEC. They are not official O*NET Interest Profiler items or a validated psychometric assessment and require pilot testing and expert review.
 
@@ -101,7 +107,7 @@ BriefAptitudePercentage = (correct answers / 5) Ã— 100
 
 Answered coverage is the number of valid task responses divided by five and expressed as a percentage. Full precision is preserved internally and values are rounded only for display. Confidence is always labeled `Limited` because one task per selected reasoning area cannot support a complete dimension-level aptitude claim.
 
-Review displays each task as `Correct` or `Incorrect`, plus the total correct and overall percentage. It does not display a Numerical, Logical, Verbal, Spatial and Technical, or Data Interpretation aptitude percentage. The result is not copied into `StudentProfile.aptitudeScores` and does not enter recommendation scoring yet. The existing missing-aptitude behavior therefore applies to new Version 2 sessions.
+Review displays each task as `Correct` or `Incorrect`, plus the total correct and overall percentage. It does not display a Numerical, Logical, Verbal, Spatial and Technical, or Data Interpretation aptitude percentage. Version 2 uses only the overall percentage as the same 15% contribution for every program. It is not copied into `StudentProfile.aptitudeScores`, and no program-specific aptitude precision is invented.
 
 These five tasks are original project content. They are not a validated psychometric instrument and do not provide a complete measure of aptitude. The answer key is separated from user-facing task data and component props, but client-side scoring is not a security boundary.
 
@@ -126,7 +132,7 @@ The Version 1 aptitude self-assessment uses three statements for each of the six
 
 Dimension evidence coverage is the number of valid responses divided by the three expected responses. The assessment flow requires all 18 responses before review. These questions and mappings are recommendation-model assumptions for educational guidance, not a validated psychometric test.
 
-### Final suitability
+### Version 1 final suitability
 
 The current workbook recommends:
 
@@ -137,6 +143,26 @@ FinalScore = AcademicScore × 0.50
 ```
 
 These 50/30/20 component weights are model assumptions. They require review with academic or career-counselling experts before production use.
+
+### Version 2 mode-aware final suitability
+
+Quick Guidance uses:
+
+```text
+FinalScore = AcademicScore Ã— 0.55
+           + RIASECInterestScore Ã— 0.30
+           + BriefAptitudeScore Ã— 0.15
+```
+
+Detailed Guidance uses:
+
+```text
+FinalScore = AcademicScore Ã— 0.50
+           + RIASECInterestScore Ã— 0.35
+           + BriefAptitudeScore Ã— 0.15
+```
+
+The explicit model IDs are `version-2-quick-55-30-15` and `version-2-detailed-50-35-15`. The legacy model ID is `version-1-custom-50-30-20`. Eligibility is evaluated first and is never changed by any of these component scores.
 
 ## Program-specific weights
 
@@ -167,7 +193,7 @@ The workbook labels them “Model-defined recommendation weights.” Nonzero sub
 
 These labels describe model suitability only. They do not imply admission likelihood.
 
-## Confidence
+## Version 1 confidence
 
 Confidence is a recommendation-model assumption based on component alignment and evidence coverage:
 
@@ -180,6 +206,16 @@ Confidence is a recommendation-model assumption based on component alignment and
 
 The last rule prevents a flat self-assessment from being presented as a strong directional signal. These thresholds are transparent MVP assumptions, not validated psychometric standards.
 
+## Version 2 confidence
+
+Quick Guidance confidence is always Low or Medium; it can never be High. Medium requires complete Quick RIASEC and brief aptitude evidence, at least 65% academic evidence coverage, an academic/RIASEC score difference of no more than 20 points, and a brief aptitude percentage of at least 40.
+
+Detailed Guidance may be High only when academic evidence coverage is effectively 100%, the academic/RIASEC score difference is no more than 12.5 points, and the range across academic, RIASEC, and brief aptitude scores is no more than 25 points. Medium requires at least 65% academic coverage, an academic/RIASEC difference of no more than 20 points, and brief aptitude of at least 20. Other cases are Low.
+
+Every Version 2 result retains the `Limited` aptitude label. A High Detailed result also states exactly: "The aptitude component is based on a brief five-task exercise and remains limited evidence."
+
+These coverage and alignment thresholds are transparent project-model assumptions, not official admission rules or validated psychometric confidence standards.
+
 ## Institutional-fit warning
 
 A high score among available programs does not mean the institution offers a genuinely close match. The interface should present available programs as alternatives when appropriate rather than forcing a misleading “best match.”
@@ -190,6 +226,8 @@ The MVP adds a warning when:
 - the highest Eligible score is below 55;
 - the highest Eligible result has less than 65% combined evidence coverage; or
 - no program receives an Eligible result.
+
+For Version 2, the health warning uses a Pre-Medical Biology mark of at least 80 plus an average of at least 65 across Social and Investigative RIASEC scores. This is a conservative institutional-fit signal, not a diagnosis or career determination.
 
 These warning triggers are model assumptions and do not diagnose a student's interests or abilities.
 

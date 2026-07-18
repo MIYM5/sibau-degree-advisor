@@ -1,4 +1,5 @@
 import { programs } from "../data/programs";
+import { programRiasecWeights } from "../data/program-riasec-weights";
 import type { DegreeProgram } from "../types/program";
 import type {
   EligibleRecommendationResult,
@@ -6,18 +7,40 @@ import type {
   RecommendationConfidence,
   RecommendationResult,
   UnrankedRecommendationResult,
+  Version2RecommendationInput,
+  Version2RecommendationMetadata,
 } from "../types/recommendation";
 import type { StudentProfile } from "../types/student";
 import { calculateAcademicScore } from "./academic-scoring";
 import { calculateAptitudeScore } from "./aptitude-scoring";
 import { evaluateEligibility } from "./eligibility-engine";
 import { calculateInterestScore } from "./interest-scoring";
+import { calculateBriefAptitudeScore } from "./brief-aptitude-scoring";
+import { calculateRiasecInterestScore } from "./riasec-interest-scoring";
 
 const FINAL_SCORE_WEIGHTS = {
   academic: 0.5,
   interest: 0.3,
   aptitude: 0.2,
 } as const;
+
+export const VERSION_2_SCORE_WEIGHTS = {
+  quick: { academic: 0.55, interest: 0.3, aptitude: 0.15 },
+  detailed: { academic: 0.5, interest: 0.35, aptitude: 0.15 },
+} as const;
+
+export const VERSION_2_SCORING_MODELS = {
+  quick: "version-2-quick-55-30-15",
+  detailed: "version-2-detailed-50-35-15",
+} as const;
+
+export const VERSION_2_QUESTIONNAIRE_VERSIONS = {
+  quick: "version-2-quick-riasec-v1-brief-aptitude-v1",
+  detailed: "version-2-detailed-riasec-v1-brief-aptitude-v1",
+} as const;
+
+export const LIMITED_APTITUDE_CONFIDENCE_NOTE =
+  "The aptitude component is based on a brief five-task exercise and remains limited evidence.";
 
 const ALIGNMENT_THRESHOLD = 12.5;
 const LIMITED_EVIDENCE_THRESHOLD = 0.65;
@@ -41,6 +64,10 @@ export interface RecommendationEngineResult {
   notEligible: UnrankedRecommendationResult[];
   institutionalFitWarnings: InstitutionalFitWarning[];
 }
+
+export interface Version2RecommendationEngineResult
+  extends RecommendationEngineResult,
+    Version2RecommendationMetadata {}
 
 function compareRecommendationOrder(
   left: Pick<RecommendationResult, "finalScore" | "programName" | "programId">,
@@ -355,6 +382,338 @@ export function generateRecommendations(
     notEligible,
     institutionalFitWarnings: buildInstitutionalFitWarnings(
       student,
+      eligibleRecommendations,
+    ),
+  };
+}
+
+const programRiasecMappingById = new Map(
+  programRiasecWeights.map((mapping) => [mapping.programId, mapping] as const),
+);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function assertVersion2RecommendationInput(
+  value: unknown,
+): asserts value is Version2RecommendationInput {
+  if (!isRecord(value) || value.version !== 2) {
+    throw new TypeError("A Version 2 recommendation input is required.");
+  }
+  if (value.assessmentMode !== "quick" && value.assessmentMode !== "detailed") {
+    throw new RangeError("Unknown Version 2 assessment mode.");
+  }
+
+  const mode = value.assessmentMode;
+  if (value.scoringModelVersion !== VERSION_2_SCORING_MODELS[mode]) {
+    throw new RangeError(
+      `${mode} mode requires ${VERSION_2_SCORING_MODELS[mode]}.`,
+    );
+  }
+  if (
+    value.questionnaireVersion !== VERSION_2_QUESTIONNAIRE_VERSIONS[mode]
+  ) {
+    throw new RangeError(
+      `${mode} mode requires ${VERSION_2_QUESTIONNAIRE_VERSIONS[mode]}.`,
+    );
+  }
+  if (!isRecord(value.academicProfile)) {
+    throw new TypeError("Version 2 academic profile is missing.");
+  }
+  if (!isRecord(value.riasecResult) || !isRecord(value.riasecResult.scores)) {
+    throw new TypeError("Version 2 RIASEC evidence is missing.");
+  }
+  if (!isRecord(value.briefAptitudeResult)) {
+    throw new TypeError("Version 2 brief aptitude evidence is missing.");
+  }
+
+  const expectedRiasecLabel =
+    mode === "quick" ? "Preliminary" : "Stronger interest evidence";
+  if (
+    value.riasecEvidenceLabel !== expectedRiasecLabel ||
+    value.riasecResult.evidenceLabel !== expectedRiasecLabel ||
+    value.aptitudeEvidenceLabel !== "Limited" ||
+    value.briefAptitudeResult.confidenceLabel !== "Limited"
+  ) {
+    throw new RangeError(
+      "Version 2 evidence labels do not match the selected assessment mode.",
+    );
+  }
+  if (
+    value.riasecResult.isValid !== true ||
+    value.riasecResult.isComplete !== true
+  ) {
+    throw new RangeError("Complete, valid Version 2 RIASEC evidence is required.");
+  }
+  if (
+    (mode === "quick" && value.riasecResult.evidenceCoverage !== 1) ||
+    (mode === "detailed" &&
+      (!isRecord(value.riasecResult.evidenceCoverage) ||
+        value.riasecResult.evidenceCoverage.percentageCoverage !== 100))
+  ) {
+    throw new RangeError("Version 2 RIASEC evidence coverage must be complete.");
+  }
+  if (
+    value.briefAptitudeResult.isValid !== true ||
+    value.briefAptitudeResult.isComplete !== true
+  ) {
+    throw new RangeError(
+      "Complete, valid Version 2 brief aptitude evidence is required.",
+    );
+  }
+}
+
+function toEligibilityProfile(
+  input: Version2RecommendationInput,
+): StudentProfile {
+  return {
+    name: input.academicProfile.name,
+    intermediateGroup: input.academicProfile.intermediateGroup,
+    subjectMarks: input.academicProfile.subjectMarks,
+    interestScores: {},
+    aptitudeScores: {},
+  };
+}
+
+function getVersion2Confidence(
+  mode: Version2RecommendationInput["assessmentMode"],
+  academicScore: number,
+  interestScore: number,
+  aptitudeScore: number,
+  academicEvidenceCoverage: number,
+): RecommendationConfidence {
+  const academicInterestDifference = Math.abs(academicScore - interestScore);
+
+  if (mode === "quick") {
+    return academicEvidenceCoverage >= LIMITED_EVIDENCE_THRESHOLD &&
+      academicInterestDifference <= 20 &&
+      aptitudeScore >= 40
+      ? "Medium"
+      : "Low";
+  }
+
+  const componentRange =
+    Math.max(academicScore, interestScore, aptitudeScore) -
+    Math.min(academicScore, interestScore, aptitudeScore);
+  if (
+    academicEvidenceCoverage >= 0.999999 &&
+    academicInterestDifference <= ALIGNMENT_THRESHOLD &&
+    componentRange <= 25
+  ) {
+    return "High";
+  }
+  if (
+    academicEvidenceCoverage >= LIMITED_EVIDENCE_THRESHOLD &&
+    academicInterestDifference <= 20 &&
+    aptitudeScore >= 20
+  ) {
+    return "Medium";
+  }
+  return "Low";
+}
+
+function scoreVersion2Program(
+  program: DegreeProgram,
+  input: Version2RecommendationInput,
+  eligibilityProfile: StudentProfile,
+): RecommendationResult {
+  // Hard eligibility is deliberately evaluated before any suitability score.
+  const eligibility = evaluateEligibility(program, eligibilityProfile);
+  const academic = calculateAcademicScore(
+    program.academicWeights,
+    input.academicProfile.subjectMarks,
+  );
+  const mapping = programRiasecMappingById.get(program.id);
+  if (!mapping) {
+    throw new RangeError(`No reviewed RIASEC mapping exists for ${program.id}.`);
+  }
+  const interest = calculateRiasecInterestScore(
+    input.riasecResult.scores,
+    mapping,
+  );
+  const aptitude = calculateBriefAptitudeScore(input.briefAptitudeResult);
+  const weights = VERSION_2_SCORE_WEIGHTS[input.assessmentMode];
+  const finalScore =
+    academic.score * weights.academic +
+    interest.score * weights.interest +
+    aptitude.score * weights.aptitude;
+  if (!Number.isFinite(finalScore) || finalScore < 0 || finalScore > 100) {
+    throw new RangeError("Version 2 final score must remain between 0 and 100.");
+  }
+  const evidenceCoverage =
+    academic.evidenceCoverage * weights.academic +
+    interest.evidenceCoverage * weights.interest +
+    aptitude.evidenceCoverage * weights.aptitude;
+  const confidence = getVersion2Confidence(
+    input.assessmentMode,
+    academic.score,
+    interest.score,
+    aptitude.score,
+    academic.evidenceCoverage,
+  );
+  const confidenceNotes = [LIMITED_APTITUDE_CONFIDENCE_NOTE];
+  const reasons = unique([
+    ...eligibility.explanations,
+    `Academic alignment is ${academic.score.toFixed(1)}/100 based on the available program-weighted subjects.`,
+    ...academic.reasons,
+    ...interest.reasons,
+    ...aptitude.reasons,
+    ...(confidence === "High" ? confidenceNotes : []),
+  ]);
+  const improvementAreas = buildImprovementAreas([
+    {
+      name: "academic",
+      score: academic.score,
+      evidenceCoverage: academic.evidenceCoverage,
+      improvementAreas: academic.improvementAreas,
+    },
+    {
+      name: "interest",
+      score: interest.score,
+      evidenceCoverage: interest.evidenceCoverage,
+      improvementAreas: interest.improvementAreas,
+    },
+    {
+      name: "aptitude",
+      score: aptitude.score,
+      evidenceCoverage: aptitude.evidenceCoverage,
+      improvementAreas: aptitude.improvementAreas,
+    },
+  ]);
+  const base = {
+    programId: program.id,
+    programName: program.name,
+    academicScore: academic.score,
+    interestScore: interest.score,
+    aptitudeScore: aptitude.score,
+    finalScore,
+    recommendationBand: getRecommendationBand(finalScore),
+    confidence,
+    evidenceCoverage,
+    reasons,
+    improvementAreas,
+    confidenceNotes,
+  };
+
+  return eligibility.eligibilityStatus === "Eligible"
+    ? { ...base, eligibilityStatus: "Eligible", rank: 0 }
+    : {
+        ...base,
+        eligibilityStatus: eligibility.eligibilityStatus,
+        rank: null,
+      };
+}
+
+function buildVersion2InstitutionalFitWarnings(
+  input: Version2RecommendationInput,
+  eligibleRecommendations: readonly EligibleRecommendationResult[],
+): InstitutionalFitWarning[] {
+  const warnings: InstitutionalFitWarning[] = [];
+  const eligibilityProfile = toEligibilityProfile(input);
+  const biology = findSubjectPercentage(eligibilityProfile, "Biology");
+  const { social, investigative } = input.riasecResult.scores;
+
+  if (
+    input.academicProfile.intermediateGroup === "Pre-Medical" &&
+    biology !== undefined &&
+    biology >= 80 &&
+    (social + investigative) / 2 >= 65
+  ) {
+    warnings.push({
+      code: "field_not_offered_clinical_health",
+      message:
+        "This Pre-Medical profile combines strong Biology marks with people-focused and investigative interests, but the current SIBAU knowledge base contains no medical or clinical degree. Listed programs should be treated as available alternatives, not close clinical matches.",
+    });
+  }
+
+  const topRecommendation = eligibleRecommendations[0];
+  if (!topRecommendation) {
+    warnings.push({
+      code: "no_eligible_programs",
+      message:
+        "No program currently has an Eligible result, so the current admission advertisement should be checked before interpreting suitability results.",
+    });
+    return warnings;
+  }
+  if (topRecommendation.finalScore < 55) {
+    warnings.push({
+      code: "top_match_is_weak",
+      message:
+        "Even the highest eligible suitability score is a Weak Match, so the available SIBAU programs may not closely fit this profile.",
+    });
+  }
+  if (topRecommendation.evidenceCoverage < LIMITED_EVIDENCE_THRESHOLD) {
+    warnings.push({
+      code: "insufficient_recommendation_evidence",
+      message:
+        "The recommendation has limited valid academic evidence. Add relevant subject marks before relying on the ordering.",
+    });
+  }
+  return warnings;
+}
+
+/**
+ * Generates Version 2 recommendations from a strict mode-specific input.
+ * Missing or mismatched RIASEC and brief aptitude evidence is rejected rather
+ * than replaced with Version 1 neutral placeholders.
+ */
+export function generateVersion2Recommendations(
+  value: unknown,
+  programData: readonly DegreeProgram[] = programs,
+): Version2RecommendationEngineResult {
+  assertVersion2RecommendationInput(value);
+  const input = value;
+  // Validate both complete component inputs before evaluating any programs.
+  calculateBriefAptitudeScore(input.briefAptitudeResult);
+  calculateRiasecInterestScore(
+    input.riasecResult.scores,
+    programRiasecWeights[0],
+  );
+
+  const eligibilityProfile = toEligibilityProfile(input);
+  const scored = programData.map((program) =>
+    scoreVersion2Program(program, input, eligibilityProfile),
+  );
+  const eligibleRecommendations = rankEligible(
+    scored.filter(
+      (result): result is EligibleRecommendationResult =>
+        result.eligibilityStatus === "Eligible",
+    ),
+  );
+  const verificationRequired = scored
+    .filter(
+      (result): result is UnrankedRecommendationResult =>
+        result.eligibilityStatus === "Verification required",
+    )
+    .sort(compareRecommendationOrder);
+  const notEligible = scored
+    .filter(
+      (result): result is UnrankedRecommendationResult =>
+        result.eligibilityStatus === "Not eligible",
+    )
+    .sort(compareRecommendationOrder);
+  const componentWeights = VERSION_2_SCORE_WEIGHTS[input.assessmentMode];
+
+  return {
+    version: 2,
+    assessmentMode: input.assessmentMode,
+    scoringModelVersion: input.scoringModelVersion,
+    questionnaireVersion: input.questionnaireVersion,
+    riasecEvidenceLabel: input.riasecEvidenceLabel,
+    aptitudeEvidenceLabel: input.aptitudeEvidenceLabel,
+    componentWeights,
+    recommendations: [
+      ...eligibleRecommendations,
+      ...verificationRequired,
+      ...notEligible,
+    ],
+    eligibleRecommendations,
+    topFiveEligibleRecommendations: eligibleRecommendations.slice(0, 5),
+    verificationRequired,
+    notEligible,
+    institutionalFitWarnings: buildVersion2InstitutionalFitWarnings(
+      input,
       eligibleRecommendations,
     ),
   };

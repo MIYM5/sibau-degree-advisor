@@ -7,12 +7,13 @@ import { interestQuestions } from "../src/data/interest-questions";
 import { quickInterestScenarios } from "../src/data/quick-interest-scenarios";
 import { toSubjectMarks } from "../src/lib/assessment-form";
 import {
-  createRecommendationSessionPayload,
+  createVersion2RecommendationSessionPayload,
   parseAssessmentSessionDraft,
   parseRecommendationSessionPayload,
 } from "../src/lib/assessment-session";
 import {
   buildStudentProfile,
+  buildVersion2RecommendationInput,
   buildVersion2StudentProfile,
 } from "../src/lib/assessment-to-student-profile";
 import type { AptitudeResponses } from "../src/lib/aptitude-assessment";
@@ -23,7 +24,7 @@ import {
   validateBriefAptitudeConfiguration,
 } from "../src/lib/brief-aptitude-assessment";
 import type { InterestResponses } from "../src/lib/interest-assessment";
-import { generateRecommendations } from "../src/lib/recommendation-engine";
+import { generateVersion2Recommendations } from "../src/lib/recommendation-engine";
 import type {
   BriefAptitudeChoiceId,
   BriefAptitudeResponse,
@@ -412,10 +413,19 @@ const tests: Array<{ name: string; run: () => void }> = [
         "Brief results must remain outside legacy aptitude dimensions.",
       );
 
-      const payload = createRecommendationSessionPayload(
+      const inputBuild = buildVersion2RecommendationInput({
+        assessmentMode: "quick",
+        name: draft.name,
+        intermediateGroup: draft.intermediateGroup,
+        subjectMarks: toSubjectMarks(subjectRows),
+        quickInterestResponses: draft.quickInterestResponses,
+        briefAptitudeResponses: correctResponses,
+      });
+      assert(inputBuild.isValid, "The Version 2 recommendation input should build.");
+      const payload = createVersion2RecommendationSessionPayload(
         draft,
-        built.profile,
-        generateRecommendations(built.profile),
+        inputBuild.input,
+        generateVersion2Recommendations(inputBuild.input),
       );
       assert(payload.version === 2, "New payloads should use version 2.");
       assert(

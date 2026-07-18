@@ -1,8 +1,13 @@
 import { aptitudeQuestions } from "../data/aptitude-questions";
 import { interestQuestions } from "../data/interest-questions";
 import { programs } from "../data/programs";
-import type { RecommendationEngineResult } from "./recommendation-engine";
 import {
+  generateVersion2Recommendations,
+  type RecommendationEngineResult,
+  type Version2RecommendationEngineResult,
+} from "./recommendation-engine";
+import {
+  buildVersion2RecommendationInput,
   buildDetailedStudentProfile,
   buildQuickStudentProfile,
   buildStudentProfile,
@@ -23,7 +28,10 @@ import type { DetailedRiasecResponse } from "../types/detailed-interest";
 import type { BriefAptitudeResponse } from "../types/brief-aptitude";
 import type { IntermediateGroup } from "../types/program";
 import type { QuickInterestResponse } from "../types/quick-interest";
-import type { RecommendationResult } from "../types/recommendation";
+import type {
+  RecommendationResult,
+  Version2RecommendationInput,
+} from "../types/recommendation";
 import type { StudentProfile } from "../types/student";
 
 export const ASSESSMENT_DRAFT_SESSION_KEY =
@@ -43,13 +51,28 @@ export interface AssessmentSessionDraft {
   briefAptitudeResponses?: BriefAptitudeResponse[];
 }
 
-export interface RecommendationSessionPayload {
-  version: 1 | 2;
+interface RecommendationSessionPayloadBase {
   createdAt: string;
   assessmentDraft: AssessmentSessionDraft;
+}
+
+export interface Version1RecommendationSessionPayload
+  extends RecommendationSessionPayloadBase {
+  version: 1;
   studentProfile: StudentProfile;
   recommendationResult: RecommendationEngineResult;
 }
+
+export interface Version2RecommendationSessionPayload
+  extends RecommendationSessionPayloadBase {
+  version: 2;
+  recommendationInput: Version2RecommendationInput;
+  recommendationResult: Version2RecommendationEngineResult;
+}
+
+export type RecommendationSessionPayload =
+  | Version1RecommendationSessionPayload
+  | Version2RecommendationSessionPayload;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -211,7 +234,9 @@ function isRecommendationResult(value: unknown): value is RecommendationResult {
     ].includes(String(value.recommendationBand)) &&
     ["High", "Medium", "Low"].includes(String(value.confidence)) &&
     isStringArray(value.reasons) &&
-    isStringArray(value.improvementAreas)
+    isStringArray(value.improvementAreas) &&
+    (value.confidenceNotes === undefined ||
+      isStringArray(value.confidenceNotes))
   );
 }
 
@@ -261,16 +286,87 @@ function isRecommendationEngineResult(
   );
 }
 
+function isVersion2RecommendationEngineResult(
+  value: unknown,
+): value is Version2RecommendationEngineResult {
+  if (!isRecommendationEngineResult(value) || !isRecord(value)) return false;
+  if (value.version !== 2) return false;
+  if (value.assessmentMode !== "quick" && value.assessmentMode !== "detailed") {
+    return false;
+  }
+  const mode = value.assessmentMode;
+  const expectedScoringModel =
+    mode === "quick"
+      ? "version-2-quick-55-30-15"
+      : "version-2-detailed-50-35-15";
+  const expectedQuestionnaire =
+    mode === "quick"
+      ? "version-2-quick-riasec-v1-brief-aptitude-v1"
+      : "version-2-detailed-riasec-v1-brief-aptitude-v1";
+  const expectedRiasecLabel =
+    mode === "quick" ? "Preliminary" : "Stronger interest evidence";
+  const weights = value.componentWeights;
+
+  return (
+    value.scoringModelVersion === expectedScoringModel &&
+    value.questionnaireVersion === expectedQuestionnaire &&
+    value.riasecEvidenceLabel === expectedRiasecLabel &&
+    value.aptitudeEvidenceLabel === "Limited" &&
+    isRecord(weights) &&
+    isFiniteNumber(weights.academic) &&
+    isFiniteNumber(weights.interest) &&
+    isFiniteNumber(weights.aptitude) &&
+    weights.academic === (mode === "quick" ? 0.55 : 0.5) &&
+    weights.interest === (mode === "quick" ? 0.3 : 0.35) &&
+    weights.aptitude === 0.15
+  );
+}
+
 export function createRecommendationSessionPayload(
   assessmentDraft: AssessmentSessionDraft,
   studentProfile: StudentProfile,
   recommendationResult: RecommendationEngineResult,
-): RecommendationSessionPayload {
+): Version1RecommendationSessionPayload {
+  if (assessmentDraft.schemaVersion === 2) {
+    throw new RangeError(
+      "Version 2 drafts require createVersion2RecommendationSessionPayload.",
+    );
+  }
   return {
-    version: assessmentDraft.schemaVersion === 2 ? 2 : 1,
+    version: 1,
     createdAt: new Date().toISOString(),
     assessmentDraft,
     studentProfile,
+    recommendationResult,
+  };
+}
+
+export function createVersion2RecommendationSessionPayload(
+  assessmentDraft: AssessmentSessionDraft,
+  recommendationInput: Version2RecommendationInput,
+  recommendationResult: Version2RecommendationEngineResult,
+): Version2RecommendationSessionPayload {
+  if (assessmentDraft.schemaVersion !== 2) {
+    throw new RangeError("A Version 2 draft is required.");
+  }
+  if (
+    recommendationInput.assessmentMode !==
+      recommendationResult.assessmentMode ||
+    recommendationInput.scoringModelVersion !==
+      recommendationResult.scoringModelVersion ||
+    recommendationInput.questionnaireVersion !==
+      recommendationResult.questionnaireVersion
+  ) {
+    throw new RangeError(
+      "Version 2 recommendation input and result metadata do not match.",
+    );
+  }
+
+  return {
+    version: 2,
+    createdAt: new Date().toISOString(),
+    assessmentDraft,
+    recommendationInput,
     recommendationResult,
   };
 }
@@ -287,15 +383,62 @@ export function parseRecommendationSessionPayload(
       (value.version !== 1 && value.version !== 2) ||
       typeof value.createdAt !== "string" ||
       Number.isNaN(Date.parse(value.createdAt)) ||
-      !isAssessmentSessionDraft(value.assessmentDraft) ||
-      !isRecommendationEngineResult(value.recommendationResult)
+      !isAssessmentSessionDraft(value.assessmentDraft)
     ) {
       return null;
     }
 
-    const expectedPayloadVersion =
-      value.assessmentDraft.schemaVersion === 2 ? 2 : 1;
-    if (value.version !== expectedPayloadVersion) return null;
+    if (value.version === 2) {
+      if (
+        value.assessmentDraft.schemaVersion !== 2 ||
+        !isVersion2RecommendationEngineResult(value.recommendationResult) ||
+        !isRecord(value.recommendationInput)
+      ) {
+        return null;
+      }
+      const draft = value.assessmentDraft;
+      const rebuilt = draft.quickInterestResponses
+        ? buildVersion2RecommendationInput({
+            assessmentMode: "quick",
+            name: draft.name,
+            intermediateGroup: draft.intermediateGroup,
+            subjectMarks: toSubjectMarks(draft.subjectRows),
+            quickInterestResponses: draft.quickInterestResponses,
+            briefAptitudeResponses: draft.briefAptitudeResponses ?? [],
+          })
+        : draft.detailedInterestResponses
+          ? buildVersion2RecommendationInput({
+              assessmentMode: "detailed",
+              name: draft.name,
+              intermediateGroup: draft.intermediateGroup,
+              subjectMarks: toSubjectMarks(draft.subjectRows),
+              detailedInterestResponses: draft.detailedInterestResponses,
+              briefAptitudeResponses: draft.briefAptitudeResponses ?? [],
+            })
+          : null;
+      if (
+        !rebuilt?.isValid ||
+        JSON.stringify(rebuilt.input) !==
+          JSON.stringify(value.recommendationInput)
+      ) {
+        return null;
+      }
+      const regenerated = generateVersion2Recommendations(rebuilt.input);
+      if (
+        JSON.stringify(regenerated) !==
+        JSON.stringify(value.recommendationResult)
+      ) {
+        return null;
+      }
+      return value as unknown as Version2RecommendationSessionPayload;
+    }
+
+    if (
+      value.assessmentDraft.schemaVersion === 2 ||
+      !isRecommendationEngineResult(value.recommendationResult)
+    ) {
+      return null;
+    }
 
     const reviewOnlyProfileData = {
       name: value.assessmentDraft.name,
@@ -303,15 +446,7 @@ export function parseRecommendationSessionPayload(
       subjectMarks: toSubjectMarks(value.assessmentDraft.subjectRows),
       aptitudeResponses: value.assessmentDraft.aptitudeResponses,
     };
-    const rebuilt = value.assessmentDraft.briefAptitudeResponses
-      ? buildVersion2StudentProfile({
-          name: value.assessmentDraft.name,
-          intermediateGroup: value.assessmentDraft.intermediateGroup,
-          subjectMarks: toSubjectMarks(value.assessmentDraft.subjectRows),
-          briefAptitudeResponses:
-            value.assessmentDraft.briefAptitudeResponses,
-        })
-      : value.assessmentDraft.quickInterestResponses
+    const rebuilt = value.assessmentDraft.quickInterestResponses
         ? buildQuickStudentProfile(reviewOnlyProfileData)
         : value.assessmentDraft.detailedInterestResponses
           ? buildDetailedStudentProfile(reviewOnlyProfileData)
@@ -329,7 +464,7 @@ export function parseRecommendationSessionPayload(
       return null;
     }
 
-    return value as unknown as RecommendationSessionPayload;
+    return value as unknown as Version1RecommendationSessionPayload;
   } catch {
     return null;
   }

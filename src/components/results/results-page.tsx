@@ -78,7 +78,15 @@ export function ResultsPage() {
     );
   }
 
-  const { studentProfile, recommendationResult } = payload;
+  const studentProfile =
+    payload.version === 1
+      ? payload.studentProfile
+      : payload.recommendationInput.academicProfile;
+  const { recommendationResult } = payload;
+  const componentWeights =
+    payload.version === 2
+      ? payload.recommendationResult.componentWeights
+      : { academic: 0.5, interest: 0.3, aptitude: 0.2 };
   const overallPercentage = calculateOverallPercentage(
     studentProfile.subjectMarks,
   );
@@ -202,6 +210,15 @@ export function ResultsPage() {
                     key={recommendation.programId}
                     recommendation={recommendation}
                     program={program}
+                    componentWeights={componentWeights}
+                    interestLabel={
+                      payload.version === 2 ? "RIASEC interests" : "Interests"
+                    }
+                    aptitudeLabel={
+                      payload.version === 2
+                        ? "Brief aptitude"
+                        : "Aptitude"
+                    }
                   />
                 ) : null;
               },
@@ -233,6 +250,15 @@ export function ResultsPage() {
                     recommendation={recommendation}
                     program={program}
                     variant="verification"
+                    componentWeights={componentWeights}
+                    interestLabel={
+                      payload.version === 2 ? "RIASEC interests" : "Interests"
+                    }
+                    aptitudeLabel={
+                      payload.version === 2
+                        ? "Brief aptitude"
+                        : "Aptitude"
+                    }
                   />
                 ) : null;
               })}
@@ -315,16 +341,26 @@ export function ResultsPage() {
           </h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-3">
             <div className="rounded-xl bg-slate-50 p-4">
-              <p className="text-2xl font-black">50%</p>
+              <p className="text-2xl font-black">
+                {componentWeights.academic * 100}%
+              </p>
               <p className="mt-1 text-sm font-bold text-slate-600">Academic suitability</p>
             </div>
             <div className="rounded-xl bg-slate-50 p-4">
-              <p className="text-2xl font-black">30%</p>
+              <p className="text-2xl font-black">
+                {componentWeights.interest * 100}%
+              </p>
               <p className="mt-1 text-sm font-bold text-slate-600">Interests</p>
             </div>
             <div className="rounded-xl bg-slate-50 p-4">
-              <p className="text-2xl font-black">20%</p>
-              <p className="mt-1 text-sm font-bold text-slate-600">Aptitude self-assessment</p>
+              <p className="text-2xl font-black">
+                {componentWeights.aptitude * 100}%
+              </p>
+              <p className="mt-1 text-sm font-bold text-slate-600">
+                {payload.version === 2
+                  ? "Brief aptitude indication"
+                  : "Aptitude self-assessment"}
+              </p>
             </div>
           </div>
           <p className="mt-5 text-sm leading-6 text-slate-600">
@@ -333,6 +369,15 @@ export function ResultsPage() {
             official university admission weightages. SIBAU Degree Advisor is an
             independent project and does not make admission decisions.
           </p>
+          {payload.version === 2 && (
+            <p className="mt-3 text-sm font-medium leading-6 text-amber-800">
+              {payload.recommendationResult.scoringModelVersion} · RIASEC
+              evidence: {payload.recommendationResult.riasecEvidenceLabel} ·
+              Aptitude evidence: {payload.recommendationResult.aptitudeEvidenceLabel}.
+              The aptitude component is based on a brief five-task exercise and
+              remains limited evidence.
+            </p>
+          )}
         </section>
       </div>
     </main>

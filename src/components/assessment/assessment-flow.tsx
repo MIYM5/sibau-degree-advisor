@@ -26,12 +26,14 @@ import {
   buildDetailedStudentProfile,
   buildQuickStudentProfile,
   buildStudentProfile,
+  buildVersion2RecommendationInput,
   buildVersion2StudentProfile,
 } from "@/lib/assessment-to-student-profile";
 import {
   ASSESSMENT_DRAFT_SESSION_KEY,
   RECOMMENDATION_SESSION_KEY,
   createRecommendationSessionPayload,
+  createVersion2RecommendationSessionPayload,
   parseAssessmentSessionDraft,
   type AssessmentSessionDraft,
 } from "@/lib/assessment-session";
@@ -49,7 +51,10 @@ import {
   type InterestResponses,
 } from "@/lib/interest-assessment";
 import { calculateDetailedRiasecAssessment } from "@/lib/detailed-riasec-assessment";
-import { generateRecommendations } from "@/lib/recommendation-engine";
+import {
+  generateRecommendations,
+  generateVersion2Recommendations,
+} from "@/lib/recommendation-engine";
 import { calculateQuickInterestAssessment } from "@/lib/quick-interest-assessment";
 import {
   assessmentModeMetadata,
@@ -420,12 +425,47 @@ export function AssessmentFlow() {
           ? { briefAptitudeResponses: briefAptitudeAssessment.responses }
           : {}),
       };
-      const recommendationResult = generateRecommendations(buildResult.profile);
-      const payload = createRecommendationSessionPayload(
-        assessmentDraft,
-        buildResult.profile,
-        recommendationResult,
-      );
+      const payload =
+        assessmentDraft.schemaVersion === 2 && activeMode !== "legacy"
+          ? (() => {
+              const inputBuild =
+                activeMode === "quick"
+                  ? buildVersion2RecommendationInput({
+                      assessmentMode: "quick",
+                      name,
+                      intermediateGroup: completedAssessment.intermediateGroup,
+                      subjectMarks: completedAssessment.subjectMarks,
+                      quickInterestResponses:
+                        quickInterestAssessment.responses,
+                      briefAptitudeResponses:
+                        briefAptitudeAssessment.responses,
+                    })
+                  : buildVersion2RecommendationInput({
+                      assessmentMode: "detailed",
+                      name,
+                      intermediateGroup: completedAssessment.intermediateGroup,
+                      subjectMarks: completedAssessment.subjectMarks,
+                      detailedInterestResponses:
+                        detailedInterestAssessment.responses,
+                      briefAptitudeResponses:
+                        briefAptitudeAssessment.responses,
+                    });
+              if (!inputBuild.isValid) {
+                throw new Error(inputBuild.errors.join(" "));
+              }
+              const recommendationResult =
+                generateVersion2Recommendations(inputBuild.input);
+              return createVersion2RecommendationSessionPayload(
+                assessmentDraft,
+                inputBuild.input,
+                recommendationResult,
+              );
+            })()
+          : createRecommendationSessionPayload(
+              assessmentDraft,
+              buildResult.profile,
+              generateRecommendations(buildResult.profile),
+            );
 
       window.sessionStorage.setItem(
         ASSESSMENT_DRAFT_SESSION_KEY,

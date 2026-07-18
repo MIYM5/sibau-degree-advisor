@@ -8,8 +8,13 @@ import {
   type InterestResponses,
 } from "./interest-assessment";
 import { calculateBriefAptitudeAssessment } from "./brief-aptitude-assessment";
+import { calculateDetailedRiasecAssessment } from "./detailed-riasec-assessment";
+import { calculateQuickInterestAssessment } from "./quick-interest-assessment";
 import type { BriefAptitudeResponse } from "../types/brief-aptitude";
+import type { DetailedRiasecResponse } from "../types/detailed-interest";
 import type { IntermediateGroup } from "../types/program";
+import type { QuickInterestResponse } from "../types/quick-interest";
+import type { Version2RecommendationInput } from "../types/recommendation";
 import type { StudentProfile, SubjectMark } from "../types/student";
 
 export interface CompletedAssessmentData {
@@ -41,9 +46,36 @@ export interface CompletedVersion2AssessmentData {
   briefAptitudeResponses: readonly BriefAptitudeResponse[];
 }
 
+interface CompletedVersion2RecommendationDataBase {
+  name: string;
+  intermediateGroup: IntermediateGroup;
+  subjectMarks: readonly SubjectMark[];
+  briefAptitudeResponses: readonly BriefAptitudeResponse[];
+}
+
+export interface CompletedVersion2QuickRecommendationData
+  extends CompletedVersion2RecommendationDataBase {
+  assessmentMode: "quick";
+  quickInterestResponses: readonly QuickInterestResponse[];
+}
+
+export interface CompletedVersion2DetailedRecommendationData
+  extends CompletedVersion2RecommendationDataBase {
+  assessmentMode: "detailed";
+  detailedInterestResponses: readonly DetailedRiasecResponse[];
+}
+
+export type CompletedVersion2RecommendationData =
+  | CompletedVersion2QuickRecommendationData
+  | CompletedVersion2DetailedRecommendationData;
+
 export type StudentProfileBuildResult =
   | { isValid: true; profile: StudentProfile; errors: [] }
   | { isValid: false; profile: null; errors: string[] };
+
+export type Version2RecommendationInputBuildResult =
+  | { isValid: true; input: Version2RecommendationInput; errors: [] }
+  | { isValid: false; input: null; errors: string[] };
 
 function validateSubjectMarks(subjectMarks: readonly SubjectMark[]): string[] {
   const errors: string[] = [];
@@ -230,6 +262,96 @@ export function buildVersion2StudentProfile(
       subjectMarks: assessment.subjectMarks.map((mark) => ({ ...mark })),
       interestScores: {},
       aptitudeScores: {},
+    },
+  };
+}
+
+/**
+ * Builds the strict, mode-aware Version 2 recommendation input. RIASEC data is
+ * kept in its native six-dimension model and is never forced into the legacy
+ * StudentProfile interest fields.
+ */
+export function buildVersion2RecommendationInput(
+  assessment: CompletedVersion2RecommendationData,
+): Version2RecommendationInputBuildResult {
+  const errors: string[] = [];
+
+  if (assessment.name.trim().length === 0) {
+    errors.push("Student name is required.");
+  }
+  if (!intermediateGroups.includes(assessment.intermediateGroup)) {
+    errors.push("A valid Intermediate group is required.");
+  }
+  errors.push(...validateSubjectMarks(assessment.subjectMarks));
+
+  const briefAptitudeResult = calculateBriefAptitudeAssessment(
+    assessment.briefAptitudeResponses,
+  );
+  if (!briefAptitudeResult.isValid) {
+    errors.push("All five brief aptitude responses must be present and valid.");
+  }
+
+  const quickRiasecResult =
+    assessment.assessmentMode === "quick"
+      ? calculateQuickInterestAssessment(assessment.quickInterestResponses)
+      : null;
+  const detailedRiasecResult =
+    assessment.assessmentMode === "detailed"
+      ? calculateDetailedRiasecAssessment(assessment.detailedInterestResponses)
+      : null;
+  const riasecIsValid =
+    quickRiasecResult?.isValid ?? detailedRiasecResult?.isValid ?? false;
+  if (!riasecIsValid) {
+    errors.push(
+      assessment.assessmentMode === "quick"
+        ? "All five Quick Guidance interest scenarios must be complete and valid."
+        : "All 30 Detailed Guidance interest responses must be complete and valid.",
+    );
+  }
+
+  if (errors.length > 0 || !briefAptitudeResult.isValid || !riasecIsValid) {
+    return { isValid: false, input: null, errors };
+  }
+
+  const academicProfile = {
+    name: assessment.name.trim(),
+    intermediateGroup: assessment.intermediateGroup,
+    subjectMarks: assessment.subjectMarks.map((mark) => ({ ...mark })),
+  };
+
+  if (assessment.assessmentMode === "quick") {
+    return {
+      isValid: true,
+      errors: [],
+      input: {
+        version: 2,
+        assessmentMode: "quick",
+        academicProfile,
+        scoringModelVersion: "version-2-quick-55-30-15",
+        questionnaireVersion:
+          "version-2-quick-riasec-v1-brief-aptitude-v1",
+        riasecResult: quickRiasecResult!,
+        briefAptitudeResult,
+        riasecEvidenceLabel: "Preliminary",
+        aptitudeEvidenceLabel: "Limited",
+      },
+    };
+  }
+
+  return {
+    isValid: true,
+    errors: [],
+    input: {
+      version: 2,
+      assessmentMode: "detailed",
+      academicProfile,
+      scoringModelVersion: "version-2-detailed-50-35-15",
+      questionnaireVersion:
+        "version-2-detailed-riasec-v1-brief-aptitude-v1",
+      riasecResult: detailedRiasecResult!,
+      briefAptitudeResult,
+      riasecEvidenceLabel: "Stronger interest evidence",
+      aptitudeEvidenceLabel: "Limited",
     },
   };
 }
