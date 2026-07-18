@@ -3,21 +3,21 @@
 import { useState } from "react";
 
 import {
-  interestDimensionLabels,
-  interestQuestions,
-  type InterestQuestionId,
-  type InterestResponseValue,
-} from "@/data/interest-questions";
+  aptitudeDimensionLabels,
+  aptitudeQuestions,
+  type AptitudeQuestionId,
+  type AptitudeResponseValue,
+} from "@/data/aptitude-questions";
 import {
-  calculateInterestAssessment,
-  isInterestResponseValue,
-  type InterestResponses,
-} from "@/lib/interest-assessment";
+  calculateAptitudeAssessment,
+  isAptitudeResponseValue,
+  type AptitudeResponses,
+} from "@/lib/aptitude-assessment";
 
-interface InterestStepProps {
-  responses: InterestResponses;
-  onAnswer: (questionId: InterestQuestionId, value: InterestResponseValue) => void;
-  onBackToSubjects: () => void;
+interface AptitudeStepProps {
+  responses: AptitudeResponses;
+  onAnswer: (questionId: AptitudeQuestionId, value: AptitudeResponseValue) => void;
+  onBackToInterests: () => void;
   onComplete: () => void;
 }
 
@@ -28,25 +28,25 @@ const responseOptions = [
   { value: 4, label: "Agree" },
   { value: 5, label: "Strongly Agree" },
 ] as const satisfies readonly {
-  value: InterestResponseValue;
+  value: AptitudeResponseValue;
   label: string;
 }[];
 
-export function InterestStep({
+export function AptitudeStep({
   responses,
   onAnswer,
-  onBackToSubjects,
+  onBackToInterests,
   onComplete,
-}: InterestStepProps) {
+}: AptitudeStepProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [validationMessage, setValidationMessage] = useState<string>();
-  const question = interestQuestions[currentQuestionIndex];
+  const question = aptitudeQuestions[currentQuestionIndex];
   const response = responses[question.id];
-  const progress = ((currentQuestionIndex + 1) / interestQuestions.length) * 100;
-  const isLastQuestion = currentQuestionIndex === interestQuestions.length - 1;
+  const progress = ((currentQuestionIndex + 1) / aptitudeQuestions.length) * 100;
+  const isLastQuestion = currentQuestionIndex === aptitudeQuestions.length - 1;
 
   function goForward() {
-    if (response === undefined || !isInterestResponseValue(response)) {
+    if (response === undefined || !isAptitudeResponseValue(response)) {
       setValidationMessage("Choose one response before continuing.");
       return;
     }
@@ -57,16 +57,16 @@ export function InterestStep({
       return;
     }
 
-    const result = calculateInterestAssessment(responses);
+    const result = calculateAptitudeAssessment(responses);
     if (!result.isValid) {
       const firstMissingId =
         result.missingQuestionIds[0] ?? result.invalidQuestionIds[0];
-      const missingIndex = interestQuestions.findIndex(
+      const missingIndex = aptitudeQuestions.findIndex(
         (candidate) => candidate.id === firstMissingId,
       );
       if (missingIndex >= 0) setCurrentQuestionIndex(missingIndex);
       setValidationMessage(
-        `Answer all ${interestQuestions.length} questions before continuing.`,
+        `Answer all ${aptitudeQuestions.length} questions before continuing to review.`,
       );
       return;
     }
@@ -75,39 +75,47 @@ export function InterestStep({
   }
 
   return (
-    <section aria-labelledby="interest-assessment-heading">
+    <section aria-labelledby="aptitude-assessment-heading">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">
-            Step 3 of 5
+            Step 4 of 5
           </p>
           <h1
-            id="interest-assessment-heading"
+            id="aptitude-assessment-heading"
             className="mt-2 font-serif text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl"
           >
-            Interest assessment
+            Aptitude self-assessment
           </h1>
           <p className="mt-3 max-w-2xl leading-7 text-slate-600">
-            Choose the response that feels most accurate for you. There are no
-            right or wrong answers.
+            Think about how you usually approach learning and group tasks, then
+            choose the response that feels most accurate for you.
           </p>
         </div>
         <button
           type="button"
-          onClick={onBackToSubjects}
+          onClick={onBackToInterests}
           className="secondary-button shrink-0"
         >
           <span aria-hidden="true" className="mr-2">
             ←
           </span>
-          Subject marks
+          Interests
         </button>
       </div>
 
-      <div className="mt-8" aria-label={`Question ${currentQuestionIndex + 1} of ${interestQuestions.length}`}>
+      <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+        This is a self-assessment for educational guidance, not a validated
+        psychometric test.
+      </div>
+
+      <div
+        className="mt-8"
+        aria-label={`Question ${currentQuestionIndex + 1} of ${aptitudeQuestions.length}`}
+      >
         <div className="flex items-center justify-between gap-4 text-sm font-bold">
           <span className="text-slate-900">
-            Question {currentQuestionIndex + 1} of {interestQuestions.length}
+            Question {currentQuestionIndex + 1} of {aptitudeQuestions.length}
           </span>
           <span className="text-teal-700">
             {Math.round(progress)}% complete
@@ -123,7 +131,7 @@ export function InterestStep({
 
       <div className="mt-8 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 sm:p-8">
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-700">
-          {interestDimensionLabels[question.dimension]}
+          {aptitudeDimensionLabels[question.dimension]}
         </p>
 
         <fieldset className="mt-4">
@@ -182,7 +190,7 @@ export function InterestStep({
           type="button"
           onClick={() => {
             if (currentQuestionIndex === 0) {
-              onBackToSubjects();
+              onBackToInterests();
             } else {
               setCurrentQuestionIndex((index) => index - 1);
               setValidationMessage(undefined);
@@ -193,10 +201,12 @@ export function InterestStep({
           <span aria-hidden="true" className="mr-2">
             ←
           </span>
-          {currentQuestionIndex === 0 ? "Back to subject marks" : "Previous question"}
+          {currentQuestionIndex === 0
+            ? "Back to interests"
+            : "Previous question"}
         </button>
         <button type="button" onClick={goForward} className="primary-button">
-          {isLastQuestion ? "Continue to aptitude" : "Next question"}
+          {isLastQuestion ? "Continue to review" : "Next question"}
           <span aria-hidden="true" className="ml-2">
             →
           </span>

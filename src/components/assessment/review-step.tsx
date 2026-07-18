@@ -1,9 +1,14 @@
 import { calculateOverallPercentage } from "@/lib/assessment-form";
 import {
+  aptitudeDimensionLabels,
+  aptitudeDimensionOrder,
+} from "@/data/aptitude-questions";
+import {
   interestDimensionLabels,
   interestDimensionOrder,
 } from "@/data/interest-questions";
 import { getInterestLevel } from "@/lib/interest-assessment";
+import { getAptitudeLevel } from "@/lib/aptitude-assessment";
 import type { StudentProfile } from "@/types/student";
 
 interface ReviewStepProps {
@@ -18,7 +23,7 @@ export function ReviewStep({ studentProfile }: ReviewStepProps) {
   return (
     <section aria-labelledby="review-heading">
       <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">
-        Step 4 of 4
+        Step 5 of 5
       </p>
       <h1
         id="review-heading"
@@ -27,8 +32,8 @@ export function ReviewStep({ studentProfile }: ReviewStepProps) {
         Review your assessment
       </h1>
       <p className="mt-3 max-w-2xl leading-7 text-slate-600">
-        Check your academic information and interest summary before continuing
-        to the aptitude section in a future step.
+        Check your academic information, interests, and aptitude self-assessment
+        before recommendations are added in a future step.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -57,6 +62,62 @@ export function ReviewStep({ studentProfile }: ReviewStepProps) {
               ? "Not available"
               : `${overallPercentage.toFixed(2)}%`}
           </p>
+        </div>
+      </div>
+
+      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
+          <h2 className="text-lg font-bold text-slate-950">Aptitude summary</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Each score is the average of three responses converted to a 0–100
+            scale.
+          </p>
+        </div>
+
+        <div className="grid gap-px bg-slate-100 sm:grid-cols-2">
+          {aptitudeDimensionOrder.map((dimension) => {
+            const score = studentProfile.aptitudeScores[dimension];
+            const level = score === undefined ? null : getAptitudeLevel(score);
+            const levelStyles =
+              level === "High"
+                ? "bg-teal-100 text-teal-800"
+                : level === "Moderate"
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-slate-200 text-slate-700";
+
+            return (
+              <div
+                key={dimension}
+                className="flex items-center justify-between gap-4 bg-white px-5 py-4 sm:px-6"
+              >
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    {aptitudeDimensionLabels[dimension]}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Self-assessed aptitude
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold tabular-nums text-slate-950">
+                    {score === undefined ? "—" : score.toFixed(1)}
+                  </p>
+                  {level && (
+                    <span
+                      className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-bold ${levelStyles}`}
+                    >
+                      {level}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="border-t border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900 sm:px-6">
+          This is a self-assessment for educational guidance, not a validated
+          psychometric test.
         </div>
       </div>
 

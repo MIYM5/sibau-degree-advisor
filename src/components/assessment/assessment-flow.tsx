@@ -3,6 +3,10 @@
 import { useState } from "react";
 
 import type {
+  AptitudeQuestionId,
+  AptitudeResponseValue,
+} from "@/data/aptitude-questions";
+import type {
   InterestQuestionId,
   InterestResponseValue,
 } from "@/data/interest-questions";
@@ -17,16 +21,21 @@ import {
   type SubjectMarksValidationResult,
 } from "@/lib/assessment-form";
 import {
+  calculateAptitudeAssessment,
+  type AptitudeResponses,
+} from "@/lib/aptitude-assessment";
+import {
   calculateInterestAssessment,
   type InterestResponses,
 } from "@/lib/interest-assessment";
 import type { IntermediateGroup } from "@/types/program";
 import type { StudentProfile } from "@/types/student";
 
+import { AptitudeStep } from "./aptitude-step";
+import { InterestStep } from "./interest-step";
 import { ProgressSteps } from "./progress-steps";
 import { ReviewStep } from "./review-step";
 import { SubjectMarksStep } from "./subject-marks-step";
-import { InterestStep } from "./interest-step";
 
 const emptySubjectValidation: SubjectMarksValidationResult = {
   rowErrors: {},
@@ -52,6 +61,8 @@ export function AssessmentFlow() {
     useState<SubjectMarksValidationResult>(emptySubjectValidation);
   const [interestResponses, setInterestResponses] = useState<InterestResponses>({});
   const interestAssessment = calculateInterestAssessment(interestResponses);
+  const [aptitudeResponses, setAptitudeResponses] = useState<AptitudeResponses>({});
+  const aptitudeAssessment = calculateAptitudeAssessment(aptitudeResponses);
 
   const studentProfile: StudentProfile | null = intermediateGroup
     ? {
@@ -59,7 +70,7 @@ export function AssessmentFlow() {
         intermediateGroup,
         subjectMarks: toSubjectMarks(subjectRows),
         interestScores: interestAssessment.scores,
-        aptitudeScores: {},
+        aptitudeScores: aptitudeAssessment.scores,
       }
     : null;
 
@@ -115,9 +126,24 @@ export function AssessmentFlow() {
     }));
   }
 
-  function continueToReview() {
+  function continueToAptitudeAssessment() {
     if (!interestAssessment.isValid) return;
     setCurrentStep(4);
+  }
+
+  function answerAptitudeQuestion(
+    questionId: AptitudeQuestionId,
+    value: AptitudeResponseValue,
+  ) {
+    setAptitudeResponses((responses) => ({
+      ...responses,
+      [questionId]: value,
+    }));
+  }
+
+  function continueToReview() {
+    if (!aptitudeAssessment.isValid) return;
+    setCurrentStep(5);
   }
 
   return (
@@ -136,7 +162,7 @@ export function AssessmentFlow() {
             >
               <section aria-labelledby="basic-information-heading">
                 <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">
-                  Step 1 of 4
+                  Step 1 of 5
                 </p>
                 <h1
                   id="basic-information-heading"
@@ -281,30 +307,39 @@ export function AssessmentFlow() {
               responses={interestResponses}
               onAnswer={answerInterestQuestion}
               onBackToSubjects={() => setCurrentStep(2)}
+              onComplete={continueToAptitudeAssessment}
+            />
+          )}
+
+          {currentStep === 4 && (
+            <AptitudeStep
+              responses={aptitudeResponses}
+              onAnswer={answerAptitudeQuestion}
+              onBackToInterests={() => setCurrentStep(3)}
               onComplete={continueToReview}
             />
           )}
 
-          {currentStep === 4 && studentProfile && (
+          {currentStep === 5 && studentProfile && (
             <div>
               <ReviewStep studentProfile={studentProfile} />
               <div className="mt-10 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(3)}
+                  onClick={() => setCurrentStep(4)}
                   className="secondary-button"
                 >
                   <span aria-hidden="true" className="mr-2">
                     ←
                   </span>
-                  Edit interest answers
+                  Edit aptitude answers
                 </button>
                 <button
                   type="button"
                   disabled
                   className="inline-flex min-h-12 cursor-not-allowed items-center justify-center rounded-xl bg-slate-200 px-5 py-3 text-sm font-bold text-slate-500"
                 >
-                  Aptitude assessment coming next
+                  Recommendations coming next
                 </button>
               </div>
             </div>

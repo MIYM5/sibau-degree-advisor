@@ -70,6 +70,16 @@ AptitudeScore = sum(aptitude dimension score × applicable program weight)
 
 The aptitude section is a self-assessment, not a clinical, psychometric, or official admissions test. Missing and out-of-range responses follow the same handling as interest responses.
 
+The MVP aptitude self-assessment uses three statements for each of the six aptitude dimensions. Each response is mapped before averaging within its dimension:
+
+- 1 (Strongly Disagree) = 0
+- 2 (Disagree) = 25
+- 3 (Neutral) = 50
+- 4 (Agree) = 75
+- 5 (Strongly Agree) = 100
+
+Dimension evidence coverage is the number of valid responses divided by the three expected responses. The assessment flow requires all 18 responses before review. These questions and mappings are recommendation-model assumptions for educational guidance, not a validated psychometric test.
+
 ### Final suitability
 
 The current workbook recommends:

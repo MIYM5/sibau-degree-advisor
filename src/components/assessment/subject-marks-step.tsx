@@ -29,7 +29,7 @@ export function SubjectMarksStep({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">
-            Step 2 of 4
+            Step 2 of 5
           </p>
           <h1
             id="subject-marks-heading"
