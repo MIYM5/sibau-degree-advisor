@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 
+import type {
+  InterestQuestionId,
+  InterestResponseValue,
+} from "@/data/interest-questions";
 import {
   getSuggestedSubjectRows,
   intermediateGroups,
@@ -12,12 +16,17 @@ import {
   type SubjectMarkDraft,
   type SubjectMarksValidationResult,
 } from "@/lib/assessment-form";
+import {
+  calculateInterestAssessment,
+  type InterestResponses,
+} from "@/lib/interest-assessment";
 import type { IntermediateGroup } from "@/types/program";
 import type { StudentProfile } from "@/types/student";
 
 import { ProgressSteps } from "./progress-steps";
 import { ReviewStep } from "./review-step";
 import { SubjectMarksStep } from "./subject-marks-step";
+import { InterestStep } from "./interest-step";
 
 const emptySubjectValidation: SubjectMarksValidationResult = {
   rowErrors: {},
@@ -41,13 +50,15 @@ export function AssessmentFlow() {
   const [basicErrors, setBasicErrors] = useState<BasicInformationErrors>({});
   const [subjectValidation, setSubjectValidation] =
     useState<SubjectMarksValidationResult>(emptySubjectValidation);
+  const [interestResponses, setInterestResponses] = useState<InterestResponses>({});
+  const interestAssessment = calculateInterestAssessment(interestResponses);
 
   const studentProfile: StudentProfile | null = intermediateGroup
     ? {
         name: name.trim(),
         intermediateGroup,
         subjectMarks: toSubjectMarks(subjectRows),
-        interestScores: {},
+        interestScores: interestAssessment.scores,
         aptitudeScores: {},
       }
     : null;
@@ -87,11 +98,26 @@ export function AssessmentFlow() {
     setSubjectValidation(emptySubjectValidation);
   }
 
-  function continueToReview() {
+  function continueToInterestAssessment() {
     const validation = validateSubjectMarkRows(subjectRows);
     setSubjectValidation(validation);
     if (!validation.isValid) return;
     setCurrentStep(3);
+  }
+
+  function answerInterestQuestion(
+    questionId: InterestQuestionId,
+    value: InterestResponseValue,
+  ) {
+    setInterestResponses((responses) => ({
+      ...responses,
+      [questionId]: value,
+    }));
+  }
+
+  function continueToReview() {
+    if (!interestAssessment.isValid) return;
+    setCurrentStep(4);
   }
 
   return (
@@ -110,7 +136,7 @@ export function AssessmentFlow() {
             >
               <section aria-labelledby="basic-information-heading">
                 <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">
-                  Step 1 of 3
+                  Step 1 of 4
                 </p>
                 <h1
                   id="basic-information-heading"
@@ -218,7 +244,7 @@ export function AssessmentFlow() {
             <form
               onSubmit={(event) => {
                 event.preventDefault();
-                continueToReview();
+                continueToInterestAssessment();
               }}
               noValidate
             >
@@ -241,7 +267,7 @@ export function AssessmentFlow() {
                   Back
                 </button>
                 <button type="submit" className="primary-button">
-                  Review information
+                  Continue to interests
                   <span aria-hidden="true" className="ml-2">
                     →
                   </span>
@@ -250,26 +276,35 @@ export function AssessmentFlow() {
             </form>
           )}
 
-          {currentStep === 3 && studentProfile && (
+          {currentStep === 3 && (
+            <InterestStep
+              responses={interestResponses}
+              onAnswer={answerInterestQuestion}
+              onBackToSubjects={() => setCurrentStep(2)}
+              onComplete={continueToReview}
+            />
+          )}
+
+          {currentStep === 4 && studentProfile && (
             <div>
               <ReviewStep studentProfile={studentProfile} />
               <div className="mt-10 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(2)}
+                  onClick={() => setCurrentStep(3)}
                   className="secondary-button"
                 >
                   <span aria-hidden="true" className="mr-2">
                     ←
                   </span>
-                  Edit subject marks
+                  Edit interest answers
                 </button>
                 <button
                   type="button"
                   disabled
                   className="inline-flex min-h-12 cursor-not-allowed items-center justify-center rounded-xl bg-slate-200 px-5 py-3 text-sm font-bold text-slate-500"
                 >
-                  Interest assessment coming next
+                  Aptitude assessment coming next
                 </button>
               </div>
             </div>

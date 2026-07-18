@@ -2,12 +2,17 @@ interface ProgressStepsProps {
   currentStep: number;
 }
 
-const steps = ["Basic information", "Subject marks", "Review"] as const;
+const steps = [
+  "Basic information",
+  "Subject marks",
+  "Interest assessment",
+  "Review",
+] as const;
 
 export function ProgressSteps({ currentStep }: ProgressStepsProps) {
   return (
     <nav aria-label="Assessment progress">
-      <ol className="grid grid-cols-3 gap-2 sm:gap-4">
+      <ol className="grid grid-cols-4 gap-2 sm:gap-4">
         {steps.map((label, index) => {
           const stepNumber = index + 1;
           const isCurrent = currentStep === stepNumber;

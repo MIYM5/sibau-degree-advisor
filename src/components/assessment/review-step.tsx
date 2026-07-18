@@ -1,4 +1,9 @@
 import { calculateOverallPercentage } from "@/lib/assessment-form";
+import {
+  interestDimensionLabels,
+  interestDimensionOrder,
+} from "@/data/interest-questions";
+import { getInterestLevel } from "@/lib/interest-assessment";
 import type { StudentProfile } from "@/types/student";
 
 interface ReviewStepProps {
@@ -13,17 +18,17 @@ export function ReviewStep({ studentProfile }: ReviewStepProps) {
   return (
     <section aria-labelledby="review-heading">
       <p className="text-sm font-bold uppercase tracking-[0.16em] text-teal-700">
-        Step 3 of 3
+        Step 4 of 4
       </p>
       <h1
         id="review-heading"
         className="mt-2 font-serif text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl"
       >
-        Review academic information
+        Review your assessment
       </h1>
       <p className="mt-3 max-w-2xl leading-7 text-slate-600">
-        Check these details before continuing to the interest and aptitude
-        sections in a future step.
+        Check your academic information and interest summary before continuing
+        to the aptitude section in a future step.
       </p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -52,6 +57,55 @@ export function ReviewStep({ studentProfile }: ReviewStepProps) {
               ? "Not available"
               : `${overallPercentage.toFixed(2)}%`}
           </p>
+        </div>
+      </div>
+
+      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
+          <h2 className="text-lg font-bold text-slate-950">Interest summary</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Each score is the average of two responses converted to a 0–100
+            scale. These are self-reported interests, not ability scores.
+          </p>
+        </div>
+
+        <div className="grid gap-px bg-slate-100 sm:grid-cols-2">
+          {interestDimensionOrder.map((dimension) => {
+            const score = studentProfile.interestScores[dimension];
+            const level = score === undefined ? null : getInterestLevel(score);
+            const levelStyles =
+              level === "High"
+                ? "bg-teal-100 text-teal-800"
+                : level === "Moderate"
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-slate-200 text-slate-700";
+
+            return (
+              <div
+                key={dimension}
+                className="flex items-center justify-between gap-4 bg-white px-5 py-4 sm:px-6"
+              >
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    {interestDimensionLabels[dimension]}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">Interest dimension</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold tabular-nums text-slate-950">
+                    {score === undefined ? "—" : score.toFixed(1)}
+                  </p>
+                  {level && (
+                    <span
+                      className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-bold ${levelStyles}`}
+                    >
+                      {level}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

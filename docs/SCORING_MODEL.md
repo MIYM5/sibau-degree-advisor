@@ -49,6 +49,16 @@ InterestScore = sum(interest dimension score × applicable program weight)
 
 Missing or out-of-range responses are omitted rather than clamped or treated as zero. The remaining valid weights are re-normalized. If no valid weighted response is available, use a neutral 50-point placeholder with zero evidence coverage.
 
+The MVP interest assessment uses two statements for each of the 11 interest dimensions. Each response is mapped before averaging within its dimension:
+
+- 1 (Strongly Disagree) = 0
+- 2 (Disagree) = 25
+- 3 (Neutral) = 50
+- 4 (Agree) = 75
+- 5 (Strongly Agree) = 100
+
+Dimension evidence coverage is the number of valid responses divided by the two expected responses. The assessment flow requires all 22 responses before review. These questions and mappings are recommendation-model assumptions, not an official or psychometric assessment.
+
 ### Aptitude suitability
 
 Convert self-assessment responses to a consistent 0–100 scale, then calculate:
