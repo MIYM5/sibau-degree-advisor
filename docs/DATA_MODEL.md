@@ -97,6 +97,9 @@ Do not persist names or include CNIC numbers, phone numbers, email addresses, ro
 | `interestScore` | Model score from interest dimensions. |
 | `aptitudeScore` | Model score from aptitude dimensions. |
 | `finalScore` | Model combination used for eligible ranking. |
+| `recommendationBand` | Explainable label from Weak Match through Excellent Match, based on the final model score. |
+| `confidence` | `High`, `Medium`, or `Low` model confidence based on alignment and available evidence. |
+| `evidenceCoverage` | Fraction from 0 to 1 showing how much program-weighted evidence was available across the three components. |
 | `rank` | Numeric rank for an eligible program; `null` for other eligibility states. |
 | `reasons` | Plain-language reasons supporting the result. |
 | `improvementAreas` | Preparation areas that do not override hard eligibility. |

@@ -5,6 +5,15 @@ export type EligibilityStatus =
   | "Not eligible"
   | "Verification required";
 
+export type RecommendationBand =
+  | "Excellent Match"
+  | "Strong Match"
+  | "Good Match"
+  | "Moderate Match"
+  | "Weak Match";
+
+export type RecommendationConfidence = "High" | "Medium" | "Low";
+
 interface RecommendationResultBase {
   programId: ProgramId;
   programName: string;
@@ -12,6 +21,9 @@ interface RecommendationResultBase {
   interestScore: number;
   aptitudeScore: number;
   finalScore: number;
+  recommendationBand: RecommendationBand;
+  confidence: RecommendationConfidence;
+  evidenceCoverage: number;
   reasons: string[];
   improvementAreas: string[];
 }

@@ -74,13 +74,20 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** A failed stored hard rule returns Not eligible. An explicitly approved working-MVP outcome returns Eligible when its hard rules pass: Pre-Medical access to included non-engineering programs, and the restricted rules for BE Electrical Engineering and BE Computer Systems Engineering. Other passing records classified `verification_required` return Verification required. Overall percentage is calculated as total obtained marks divided by total possible marks across the supplied subjects.
 - **Consequences:** The engine never uses suitability weights for eligibility. Passing engineering cases remain usable for MVP testing without presenting their rules as final official policy, while other ambiguous evidence remains visible for verification.
 
+## D-010 — Use transparent scoring, evidence, confidence, and warning thresholds
+
+- **Status:** Accepted for MVP development; expert review remains required before production
+- **Date:** 2026-07-18
+- **Context:** The workbook defines program weights and a 50/30/20 final formula but does not define exact confidence thresholds, invalid-input handling, deterministic ties, or institutional-fit warning triggers.
+- **Decision:** Calculate suitability only after eligibility. Omit missing or invalid weighted inputs and re-normalize across valid evidence. When a component has no valid weighted evidence, use a neutral 50-point placeholder with zero coverage rather than treating missing evidence as zero. Combine evidence coverage using 50/30/20. Use a 12.5-point component-alignment threshold, a 65% minimum evidence threshold, deterministic program-name/ID tie-breaking, the documented recommendation bands, and the transparent health, weak-top-score, insufficient-evidence, and no-eligible-program warning triggers in `SCORING_MODEL.md`. A flat interest-and-aptitude profile is Low confidence under the documented response-range thresholds.
+- **Consequences:** Scores stay within 0–100 and remain explainable without creating eligibility. Verification-required and not-eligible programs can still show suitability for guidance but remain unranked and outside the eligible top five. These thresholds are recommendation-model assumptions, not official university rules or validated psychometric standards.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?
 - How should the BS Mathematics source conflict be resolved for production?
 - Is the Associate Degree in Physical Education & Sports Sciences inside the final undergraduate recommendation scope?
 - Which interest and aptitude question scales will be used?
-- How will confidence thresholds and near-ties be calculated and displayed?
 - What test framework and data-validation library should be selected during Next.js setup?
 - What license should the repository use?
 - When, if ever, does the product need persistent data, authentication, or Supabase?
