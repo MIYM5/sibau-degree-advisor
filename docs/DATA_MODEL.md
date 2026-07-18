@@ -89,6 +89,7 @@ The editable draft supports route-to-route navigation within one browser-tab ses
 | `interestResponses` | Responses keyed by the typed interest-question IDs. |
 | `aptitudeResponses` | Responses keyed by the typed aptitude-question IDs. |
 | `quickInterestResponses` | Optional complete five-scenario response list used only by Quick Guidance. Absent from legacy and Detailed drafts. |
+| `detailedInterestResponses` | Optional complete 30-question response list used only by the new Detailed Guidance flow. Absent from Quick and legacy drafts. |
 
 The draft is validated before it is restored. It is not a second domain model and is converted into the shared `StudentProfile` before recommendation logic runs.
 
@@ -112,7 +113,7 @@ Each mode has typed metadata:
 | `aptitudeQuestionCount` | Planned number of objective aptitude tasks. |
 | `evidenceLabel` | Plain-language strength label for the guidance. |
 
-Quick Guidance is planned for 5 broad interest scenarios and 5 objective aptitude tasks. Detailed Guidance is planned for 30 RIASEC interest items and 5 objective aptitude tasks. These counts describe the Version 2 architecture; both modes temporarily use the existing Version 1 questionnaires.
+Quick Guidance uses 5 broad interest scenarios, and Detailed Guidance uses 30 RIASEC interest items. Both modes are planned for 5 objective aptitude tasks but temporarily use the existing 18-item Version 1 aptitude self-assessment.
 
 ## Assessment-mode session payload
 
@@ -158,6 +159,23 @@ Quick Guidance contains exactly five scenarios: School project, Free afternoon, 
 The validator rejects unknown scenarios or choices, choices from another scenario, duplicate scenario responses, repeated preferences, missing positions, incomplete coverage, and malformed data. Complete results use the existing deterministic R-I-A-S-E-C tie order to create the top three and three-letter code.
 
 Quick RIASEC scores are review-only. They do not replace `StudentProfile.interestScores` or enter recommendation scoring yet. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
+
+## Detailed Guidance interest assessment
+
+Detailed Guidance contains exactly 30 original activity-preference questions: five each for Realistic, Investigative, Artistic, Social, Enterprising, and Conventional. Responses use a typed 1â€“5 scale from Strongly Dislike through Strongly Like.
+
+| Structure | Purpose |
+| --- | --- |
+| `DetailedRiasecQuestion` | Stable question ID, activity statement, RIASEC dimension, and sequential display order. |
+| `DetailedRiasecResponse` | Question ID and a whole-number response from 1 to 5. |
+| `DetailedRiasecValidationResult` | Valid responses, missing IDs, structured errors, completeness, and validity. |
+| `DetailedRiasecAssessmentResult` | Six scores, profile, explanation, overall and per-dimension coverage, evidence label, and validation details. |
+
+The validator rejects unknown or duplicate question responses, missing questions, non-integer or out-of-range values, malformed input, duplicate IDs, non-sequential orders, and any dimension without exactly five questions. Complete results use the existing deterministic R-I-A-S-E-C tie order.
+
+Detailed RIASEC scores are review-only and use the evidence label `Stronger interest evidence`. They do not replace `StudentProfile.interestScores`, enter recommendation scoring, or activate the program RIASEC mappings. Version 1 question data and scoring remain for valid legacy session payloads and historical tests.
+
+These questions are original project-designed items informed by RIASEC. They are not official O*NET Interest Profiler items or a validated psychometric assessment and require pilot testing and expert review.
 
 ## Recommendation session payload
 

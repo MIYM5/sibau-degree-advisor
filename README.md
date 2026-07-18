@@ -8,9 +8,11 @@ SIBAU Degree Advisor is an independent web application project that will help pr
 
 Version 1 remains preserved on the `main` branch and at tag `v1.0.0`. Version 2 development is taking place on the `version-2.0` branch.
 
-The repository contains the approved documentation foundation, the Excel knowledge base, typed program data, validated eligibility and recommendation engines, and a responsive end-to-end frontend flow. Version 2 now includes the architecture for **Quick Guidance** and **Detailed Guidance**, a typed six-dimension RIASEC model, explicit RIASEC mappings for all 14 programs, and the five-scenario Quick Guidance interest activity.
+The repository contains the approved documentation foundation, the Excel knowledge base, typed program data, validated eligibility and recommendation engines, and a responsive end-to-end frontend flow. Version 2 now includes the architecture for **Quick Guidance** and **Detailed Guidance**, a typed six-dimension RIASEC model, explicit RIASEC mappings for all 14 programs, the five-scenario Quick Guidance interest activity, and the 30-item Detailed Guidance RIASEC interest assessment.
 
-Quick Guidance displays preliminary RIASEC scores and a three-letter profile during review, but those values are not yet connected to recommendation scoring. Its aptitude step remains the Version 1 self-assessment temporarily. Detailed Guidance also remains on the Version 1 interest and aptitude questionnaires while its mode-specific content is developed.
+Both modes display their RIASEC scores and three-letter profile during review, but those values are not yet connected to recommendation scoring. Quick Guidance retains its approved five-scenario activity. Detailed Guidance now uses 30 original activity-preference questions, with exactly five per RIASEC dimension and a `Stronger interest evidence` label. Both modes temporarily retain the Version 1 aptitude self-assessment. The Version 1 interest questionnaire remains only for compatible legacy sessions and historical tests.
+
+The Quick and Detailed interest activities are original project-designed items informed by RIASEC. They are not the official O*NET Interest Profiler, are not validated psychometric assessments, and require pilot testing and expert review.
 
 RIASEC program mappings are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty and career-guidance experts before they influence recommendations.
 
@@ -103,6 +105,7 @@ npm run build
 npm run test:integration
 npm run test:riasec-data
 npm run test:quick-interest
+npm run test:detailed-interest
 ```
 
 ## License

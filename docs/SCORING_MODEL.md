@@ -49,7 +49,7 @@ InterestScore = sum(interest dimension score × applicable program weight)
 
 Missing or out-of-range responses are omitted rather than clamped or treated as zero. The remaining valid weights are re-normalized. If no valid weighted response is available, use a neutral 50-point placeholder with zero evidence coverage.
 
-The MVP interest assessment uses two statements for each of the 11 interest dimensions. Each response is mapped before averaging within its dimension:
+The Version 1 interest assessment uses two statements for each of the 11 interest dimensions. It remains available for legacy sessions and historical tests. Each response is mapped before averaging within its dimension:
 
 - 1 (Strongly Disagree) = 0
 - 2 (Disagree) = 25
@@ -59,7 +59,7 @@ The MVP interest assessment uses two statements for each of the 11 interest dime
 
 Dimension evidence coverage is the number of valid responses divided by the two expected responses. The assessment flow requires all 22 responses before review. These questions and mappings are recommendation-model assumptions, not an official or psychometric assessment.
 
-### Version 2 RIASEC infrastructure and Quick Guidance
+### Version 2 RIASEC infrastructure and mode-specific interests
 
 Version 2 defines Realistic, Investigative, Artistic, Social, Enterprising, and Conventional dimensions plus program-specific RIASEC mappings. Every program mapping totals 100 and uses a stable R-I-A-S-E-C dimension order.
 
@@ -73,7 +73,23 @@ QuickRIASECScore = clamp(((raw score + 5) / 15) × 100, 0, 100)
 
 The normalized scores generate a deterministic top-three profile and a `Preliminary` evidence label for review. The questions are original project-designed items informed by the RIASEC framework; they are not official O*NET Interest Profiler items or a validated psychometric assessment.
 
-No active recommendation formula changes in this stage. Quick RIASEC scores are not copied into `StudentProfile.interestScores`, matched against program RIASEC mappings, or sent to the recommendation engine. The engine's existing missing-interest handling applies to Quick Guidance. Detailed Guidance continues to use the Version 1 interest questions, 11 dimensions, program interest weights, and scoring. Both modes temporarily retain the Version 1 aptitude self-assessment, 50/30/20 final formula, rankings, confidence, and results behavior.
+Detailed Guidance uses 30 activity-preference questions, with five items per RIASEC dimension. Every answer maps directly to the same 0â€“100 scale before the arithmetic mean is calculated within its dimension:
+
+- 1 (Strongly Dislike) = 0
+- 2 (Dislike) = 25
+- 3 (Unsure) = 50
+- 4 (Like) = 75
+- 5 (Strongly Like) = 100
+
+```text
+DetailedDimensionScore = sum(mapped response scores) / valid responses in dimension
+```
+
+Overall coverage is the number of valid answers divided by 30 and expressed as a percentage. Per-dimension coverage is the number of valid answers divided by five. The active flow requires 100% coverage before continuing. Full precision is preserved internally, and the existing deterministic R-I-A-S-E-C tie order generates the top three and three-letter code. Complete Detailed results use the evidence label `Stronger interest evidence`.
+
+No active recommendation formula changes in this stage. Quick and Detailed RIASEC scores are not copied into `StudentProfile.interestScores`, matched against program RIASEC mappings, or sent to the recommendation engine. The engine's existing missing-interest handling applies to new Quick and Detailed sessions. Valid legacy Version 1 sessions still use their original 11 interest dimensions and scoring. Both modes temporarily retain the Version 1 aptitude self-assessment, 50/30/20 final formula, rankings, confidence, and results behavior.
+
+The Detailed questions are original project-designed items informed by RIASEC. They are not official O*NET Interest Profiler items or a validated psychometric assessment and require pilot testing and expert review.
 
 ### Aptitude suitability
 

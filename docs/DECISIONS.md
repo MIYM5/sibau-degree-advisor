@@ -96,14 +96,22 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Date:** 2026-07-18
 - **Context:** Quick Guidance needs a brief interest activity that covers all six RIASEC dimensions without copying official O*NET Interest Profiler items or claiming psychometric validity.
 - **Decision:** Use five original project-designed scenarios. In each scenario, require three different choices: most preferred (+2), second preferred (+1), and least preferred (-1). Normalize each dimension from the stated -5 to 10 raw range with `((raw + 5) / 15) × 100`, clamp to 0–100, and use the existing deterministic R-I-A-S-E-C tie order. Label the evidence `Preliminary`.
-- **Consequences:** Students can review six scores and a three-letter profile after five scenarios. These values are not copied into `StudentProfile.interestScores`, matched to program RIASEC mappings, or used by recommendation scoring yet. The existing aptitude step remains active for Quick Guidance, and Detailed Guidance remains on the Version 1 questionnaires. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
+- **Consequences:** Students can review six scores and a three-letter profile after five scenarios. These values are not copied into `StudentProfile.interestScores`, matched to program RIASEC mappings, or used by recommendation scoring yet. The existing aptitude step remains active for Quick Guidance; the later Detailed Guidance decision is recorded in D-013. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
+
+## D-013 — Use 30 activity-preference RIASEC items for Detailed Guidance
+
+- **Status:** Accepted for stronger review display; pilot testing, expert review, and recommendation integration remain pending
+- **Date:** 2026-07-18
+- **Context:** Detailed Guidance needs broader interest evidence than the five Quick scenarios without copying official O*NET Interest Profiler items or claiming psychometric validity.
+- **Decision:** Use 30 original project-designed activity-preference statements, with five questions for each RIASEC dimension. Map Strongly Dislike through Strongly Like to 0, 25, 50, 75, and 100, then use the arithmetic mean within each dimension. Require all 30 answers, preserve full precision, use the stable R-I-A-S-E-C tie order, and label complete results `Stronger interest evidence`.
+- **Consequences:** Detailed Guidance now shows six scores, coverage, a top-three profile, a code, and a student-friendly explanation during review. The new scores are not copied into `StudentProfile.interestScores` or used by recommendation scoring. The Version 1 interest questionnaire remains available only for compatible legacy sessions and historical tests. Both active modes temporarily retain the Version 1 aptitude self-assessment. The new items require pilot testing and review by career-guidance and educational-measurement experts.
 
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?
 - How should the BS Mathematics source conflict be resolved for production?
 - Is the Associate Degree in Physical Education & Sports Sciences inside the final undergraduate recommendation scope?
-- Which interest and aptitude question scales will be used?
+- Which response and scoring design should replace the temporary Version 1 aptitude self-assessment?
 - Which experts will review the Version 2 RIASEC program mappings, and what evidence will support revisions?
 - How should reviewed Quick and Detailed RIASEC evidence map into the active interest suitability component?
 - Should the forced most/second/least format be retained after student usability and expert review?

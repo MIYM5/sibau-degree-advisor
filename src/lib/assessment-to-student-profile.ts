@@ -25,6 +25,13 @@ export interface CompletedQuickAssessmentData {
   aptitudeResponses: AptitudeResponses;
 }
 
+export interface CompletedDetailedAssessmentData {
+  name: string;
+  intermediateGroup: IntermediateGroup;
+  subjectMarks: readonly SubjectMark[];
+  aptitudeResponses: AptitudeResponses;
+}
+
 export type StudentProfileBuildResult =
   | { isValid: true; profile: StudentProfile; errors: [] }
   | { isValid: false; profile: null; errors: string[] };
@@ -122,8 +129,8 @@ export function buildStudentProfile(
  * recommendation engine. Quick RIASEC evidence is deliberately not copied
  * into the Version 1 interest-score fields in this integration stage.
  */
-export function buildQuickStudentProfile(
-  assessment: CompletedQuickAssessmentData,
+function buildRiasecReviewOnlyStudentProfile(
+  assessment: CompletedQuickAssessmentData | CompletedDetailedAssessmentData,
 ): StudentProfileBuildResult {
   const errors: string[] = [];
 
@@ -157,4 +164,21 @@ export function buildQuickStudentProfile(
       aptitudeScores: aptitudeAssessment.scores,
     },
   };
+}
+
+export function buildQuickStudentProfile(
+  assessment: CompletedQuickAssessmentData,
+): StudentProfileBuildResult {
+  return buildRiasecReviewOnlyStudentProfile(assessment);
+}
+
+/**
+ * Creates the temporary Detailed Guidance profile used by the unchanged
+ * recommendation engine. Detailed RIASEC evidence remains review-only and is
+ * deliberately not copied into the Version 1 interest-score fields.
+ */
+export function buildDetailedStudentProfile(
+  assessment: CompletedDetailedAssessmentData,
+): StudentProfileBuildResult {
+  return buildRiasecReviewOnlyStudentProfile(assessment);
 }

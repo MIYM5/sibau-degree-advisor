@@ -23,6 +23,7 @@ import {
   type SubjectMarksValidationResult,
 } from "@/lib/assessment-form";
 import {
+  buildDetailedStudentProfile,
   buildQuickStudentProfile,
   buildStudentProfile,
 } from "@/lib/assessment-to-student-profile";
@@ -45,6 +46,7 @@ import {
   calculateInterestAssessment,
   type InterestResponses,
 } from "@/lib/interest-assessment";
+import { calculateDetailedRiasecAssessment } from "@/lib/detailed-riasec-assessment";
 import { generateRecommendations } from "@/lib/recommendation-engine";
 import { calculateQuickInterestAssessment } from "@/lib/quick-interest-assessment";
 import {
@@ -52,9 +54,15 @@ import {
   type AssessmentMode,
 } from "@/types/assessment-mode";
 import type { IntermediateGroup } from "@/types/program";
+import type {
+  DetailedRiasecQuestionId,
+  DetailedRiasecResponse,
+  DetailedRiasecResponseValue,
+} from "@/types/detailed-interest";
 import type { QuickInterestResponseDraft } from "@/types/quick-interest";
 
 import { AptitudeStep } from "./aptitude-step";
+import { DetailedInterestStep } from "./detailed-interest-step";
 import { InterestStep } from "./interest-step";
 import { ProgressSteps } from "./progress-steps";
 import { QuickInterestStep } from "./quick-interest-step";
@@ -92,6 +100,12 @@ export function AssessmentFlow() {
   const quickInterestAssessment = calculateQuickInterestAssessment(
     quickInterestResponses,
   );
+  const [detailedInterestResponses, setDetailedInterestResponses] = useState<
+    DetailedRiasecResponse[]
+  >([]);
+  const detailedInterestAssessment = calculateDetailedRiasecAssessment(
+    detailedInterestResponses,
+  );
   const [aptitudeResponses, setAptitudeResponses] = useState<AptitudeResponses>({});
   const aptitudeAssessment = calculateAptitudeAssessment(aptitudeResponses);
   const [recommendationError, setRecommendationError] = useState<string>();
@@ -117,7 +131,14 @@ export function AssessmentFlow() {
           subjectMarks: completedAssessment.subjectMarks,
           aptitudeResponses: completedAssessment.aptitudeResponses,
         })
-      : buildStudentProfile(completedAssessment)
+      : activeMode === "detailed"
+        ? buildDetailedStudentProfile({
+            name: completedAssessment.name,
+            intermediateGroup: completedAssessment.intermediateGroup,
+            subjectMarks: completedAssessment.subjectMarks,
+            aptitudeResponses: completedAssessment.aptitudeResponses,
+          })
+        : buildStudentProfile(completedAssessment)
     : null;
   const studentProfile = profileBuild?.isValid ? profileBuild.profile : null;
 
@@ -137,11 +158,15 @@ export function AssessmentFlow() {
 
     const frame = window.requestAnimationFrame(() => {
       setActiveMode(
-        modeResolution.status === "selected"
-          ? modeResolution.mode
-          : savedDraft?.quickInterestResponses
-            ? "quick"
-            : "legacy",
+        savedDraft?.quickInterestResponses
+          ? "quick"
+          : savedDraft?.detailedInterestResponses
+            ? "detailed"
+            : savedDraft
+              ? "legacy"
+              : modeResolution.status === "selected"
+                ? modeResolution.mode
+                : "legacy",
       );
 
       if (savedDraft) {
@@ -152,6 +177,9 @@ export function AssessmentFlow() {
         setInterestResponses(savedDraft.interestResponses);
         setAptitudeResponses(savedDraft.aptitudeResponses);
         setQuickInterestResponses(savedDraft.quickInterestResponses ?? []);
+        setDetailedInterestResponses(
+          savedDraft.detailedInterestResponses ?? [],
+        );
         setCurrentStep(5);
       }
     });
@@ -215,11 +243,29 @@ export function AssessmentFlow() {
     if (
       activeMode === "quick"
         ? !quickInterestAssessment.isValid
-        : !interestAssessment.isValid
+        : activeMode === "detailed"
+          ? !detailedInterestAssessment.isValid
+          : !interestAssessment.isValid
     ) {
       return;
     }
     setCurrentStep(4);
+  }
+
+  function answerDetailedInterestQuestion(
+    questionId: DetailedRiasecQuestionId,
+    value: DetailedRiasecResponseValue,
+  ) {
+    setDetailedInterestResponses((responses) => {
+      const existingIndex = responses.findIndex(
+        (response) => response.questionId === questionId,
+      );
+      const nextResponse = { questionId, value };
+      if (existingIndex < 0) return [...responses, nextResponse];
+      return responses.map((response, index) =>
+        index === existingIndex ? nextResponse : response,
+      );
+    });
   }
 
   function updateQuickInterestResponse(
@@ -266,6 +312,12 @@ export function AssessmentFlow() {
       );
       return;
     }
+    if (activeMode === "detailed" && !detailedInterestAssessment.isValid) {
+      setRecommendationError(
+        "Complete all 30 Detailed Guidance interest questions before continuing.",
+      );
+      return;
+    }
 
     const buildResult = profileBuild;
     if (!buildResult) {
@@ -289,7 +341,9 @@ export function AssessmentFlow() {
         aptitudeResponses,
         ...(activeMode === "quick"
           ? { quickInterestResponses: quickInterestAssessment.responses }
-          : {}),
+          : activeMode === "detailed"
+            ? { detailedInterestResponses: detailedInterestAssessment.responses }
+            : {}),
       };
       const recommendationResult = generateRecommendations(buildResult.profile);
       const payload = createRecommendationSessionPayload(
@@ -341,7 +395,7 @@ export function AssessmentFlow() {
             <span className="text-teal-800">
               {activeMode === "quick"
                 ? " · Quick RIASEC interests are active; aptitude remains the current self-assessment."
-                : " · Detailed mode-specific questions are being introduced in stages."}
+                : " · The 30-item Detailed RIASEC interest assessment is active; aptitude remains the current self-assessment."}
             </span>
           )}
         </p>
@@ -514,6 +568,13 @@ export function AssessmentFlow() {
                 onBackToSubjects={() => setCurrentStep(2)}
                 onComplete={continueToAptitudeAssessment}
               />
+            ) : activeMode === "detailed" ? (
+              <DetailedInterestStep
+                responses={detailedInterestResponses}
+                onAnswer={answerDetailedInterestQuestion}
+                onBackToSubjects={() => setCurrentStep(2)}
+                onComplete={continueToAptitudeAssessment}
+              />
             ) : (
               <InterestStep
                 responses={interestResponses}
@@ -543,18 +604,33 @@ export function AssessmentFlow() {
                     ? quickInterestAssessment
                     : undefined
                 }
+                detailedInterestResult={
+                  activeMode === "detailed" &&
+                  detailedInterestAssessment.isValid
+                    ? detailedInterestAssessment
+                    : undefined
+                }
               />
               <div className="mt-10 flex flex-col-reverse gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(4)}
-                  className="secondary-button"
-                >
-                  <span aria-hidden="true" className="mr-2">
-                    ←
-                  </span>
-                  Edit aptitude answers
-                </button>
+                <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(3)}
+                    className="secondary-button"
+                  >
+                    <span aria-hidden="true" className="mr-2">
+                      ←
+                    </span>
+                    Edit interest answers
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(4)}
+                    className="secondary-button"
+                  >
+                    Edit aptitude answers
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={viewRecommendations}

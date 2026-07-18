@@ -9,12 +9,14 @@ import {
 } from "@/data/interest-questions";
 import { getInterestLevel } from "@/lib/interest-assessment";
 import { getAptitudeLevel } from "@/lib/aptitude-assessment";
+import { DETAILED_RIASEC_DISCLAIMER } from "@/lib/detailed-riasec-assessment";
 import { QUICK_INTEREST_DISCLAIMER } from "@/lib/quick-interest-assessment";
 import {
   riasecDimensionLabels,
   riasecDimensionOrder,
 } from "@/types/riasec";
 import type { AssessmentMode } from "@/types/assessment-mode";
+import type { DetailedRiasecAssessmentResult } from "@/types/detailed-interest";
 import type { QuickInterestAssessmentResult } from "@/types/quick-interest";
 import type { StudentProfile } from "@/types/student";
 
@@ -22,18 +24,22 @@ interface ReviewStepProps {
   studentProfile: StudentProfile;
   assessmentMode?: AssessmentMode | "legacy";
   quickInterestResult?: QuickInterestAssessmentResult;
+  detailedInterestResult?: DetailedRiasecAssessmentResult;
 }
 
 export function ReviewStep({
   studentProfile,
   assessmentMode,
   quickInterestResult,
+  detailedInterestResult,
 }: ReviewStepProps) {
   const overallPercentage = calculateOverallPercentage(
     studentProfile.subjectMarks,
   );
   const isQuickGuidance =
     assessmentMode === "quick" && Boolean(quickInterestResult?.profile);
+  const isDetailedGuidance =
+    assessmentMode === "detailed" && Boolean(detailedInterestResult?.profile);
 
   return (
     <section aria-labelledby="review-heading">
@@ -51,12 +57,14 @@ export function ReviewStep({
         before generating your recommendations.
       </p>
 
-      {isQuickGuidance && (
+      {(isQuickGuidance || isDetailedGuidance) && (
         <div className="mt-6 rounded-2xl border border-teal-200 bg-teal-50 px-5 py-4 text-teal-950">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">
             Assessment mode
           </p>
-          <p className="mt-1 text-lg font-bold">Quick Guidance</p>
+          <p className="mt-1 text-lg font-bold">
+            {isQuickGuidance ? "Quick Guidance" : "Detailed Guidance"}
+          </p>
           <p className="mt-2 text-sm leading-6 text-teal-800">
             RIASEC interests are shown for review only and are not yet used by
             recommendation scoring.
@@ -146,6 +154,76 @@ export function ReviewStep({
         </div>
       )}
 
+      {isDetailedGuidance && detailedInterestResult?.profile && (
+        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-950">
+                  Detailed RIASEC interest summary
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  {detailedInterestResult.evidenceCoverage.answeredQuestions} of{" "}
+                  {detailedInterestResult.evidenceCoverage.totalQuestions} questions
+                  answered · {detailedInterestResult.evidenceCoverage.percentageCoverage.toFixed(0)}%
+                  coverage
+                </p>
+              </div>
+              <div className="rounded-xl bg-slate-950 px-4 py-3 text-white sm:text-right">
+                <p className="text-xs font-bold uppercase tracking-wider text-teal-300">
+                  Profile code
+                </p>
+                <p className="mt-1 font-serif text-2xl font-bold tracking-[0.15em]">
+                  {detailedInterestResult.profile.hollandCode}
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 text-sm font-semibold text-slate-700">
+              Top three: {detailedInterestResult.profile.topThreeLabels.join(" · ")}
+            </p>
+            <p className="mt-2 text-sm font-semibold text-teal-800">
+              Evidence label: {detailedInterestResult.evidenceLabel}
+            </p>
+          </div>
+
+          <div className="grid gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-3">
+            {riasecDimensionOrder.map((dimension) => {
+              const coverage =
+                detailedInterestResult.evidenceCoverage.perDimension[dimension];
+              return (
+                <div
+                  key={dimension}
+                  className="flex items-center justify-between gap-4 bg-white px-5 py-4 sm:px-6"
+                >
+                  <div>
+                    <p className="font-semibold text-slate-900">
+                      {riasecDimensionLabels[dimension]}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {coverage.answeredQuestions} of {coverage.totalQuestions} answered
+                    </p>
+                  </div>
+                  <p className="text-lg font-bold tabular-nums text-slate-950">
+                    {detailedInterestResult.scores[dimension].toFixed(1)}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          {detailedInterestResult.profileExplanation && (
+            <div className="border-t border-teal-200 bg-teal-50 px-5 py-4 text-sm leading-6 text-teal-950 sm:px-6">
+              <p className="font-bold">What this profile suggests</p>
+              <p className="mt-1">{detailedInterestResult.profileExplanation}</p>
+            </div>
+          )}
+
+          <div className="border-t border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-950 sm:px-6">
+            {DETAILED_RIASEC_DISCLAIMER}
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
           <h2 className="text-lg font-bold text-slate-950">Aptitude summary</h2>
@@ -202,7 +280,7 @@ export function ReviewStep({
         </div>
       </div>
 
-      {!isQuickGuidance && (
+      {assessmentMode !== "quick" && assessmentMode !== "detailed" && (
         <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
           <h2 className="text-lg font-bold text-slate-950">Interest summary</h2>

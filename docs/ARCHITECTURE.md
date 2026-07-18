@@ -4,7 +4,7 @@
 
 SIBAU Degree Advisor is a single Next.js application with local, version-controlled program data. The design keeps official evidence, eligibility decisions, and suitability scoring separate so each can be reviewed and tested independently.
 
-Version 1 is preserved on `main` and tag `v1.0.0`. Version 2 architecture work takes place on `version-2.0`. The current Version 2 stage introduces assessment-mode selection without changing the working Version 1 questionnaires, scoring, eligibility, recommendation engine, or results.
+Version 1 is preserved on `main` and tag `v1.0.0`. Version 2 architecture work takes place on `version-2.0`. Quick and Detailed Guidance now have separate RIASEC interest collection and review presentation. Recommendation scoring, eligibility, results ranking, and the temporary Version 1 aptitude assessment remain unchanged.
 
 ## Planned layers
 
@@ -74,9 +74,9 @@ scripts/                # Development validation and focused tests
 1. **Start Assessment** opens `/assessment/mode`.
 2. The student selects Quick Guidance or Detailed Guidance. A dedicated, versioned session record stores the choice.
 3. Both modes continue to `/assessment` for basic information and subject marks.
-4. Quick Guidance completes five project-designed RIASEC scenarios, followed temporarily by the Version 1 aptitude self-assessment. Detailed Guidance continues to use the Version 1 interest and aptitude questionnaires.
-5. The Review step shows Quick RIASEC scores only for Quick Guidance. It keeps editable answers in React state until the student selects **View My Recommendations**.
-6. `assessment-to-student-profile.ts` creates the existing `StudentProfile` shape. Quick RIASEC scores are deliberately omitted from its Version 1 `interestScores`; Detailed Guidance continues to use the existing interest scores.
+4. Quick Guidance completes five project-designed RIASEC scenarios. Detailed Guidance completes 30 project-designed RIASEC activity-preference questions, with five questions for each dimension. Both modes temporarily continue to the Version 1 aptitude self-assessment.
+5. The Review step shows the selected mode's six RIASEC scores, top-three profile, code, evidence label, coverage, and disclaimer. It keeps editable answers in React state until the student selects **View My Recommendations**.
+6. `assessment-to-student-profile.ts` creates the existing `StudentProfile` shape. Quick and Detailed RIASEC scores are deliberately omitted from its Version 1 `interestScores`, so they remain review-only. Valid legacy Version 1 sessions continue to rebuild their original 11-dimension interest scores.
 7. The recommendation engine checks eligibility first, calculates suitability without changing eligibility, and ranks only eligible programs.
 8. A versioned payload containing the editable assessment draft, normalized profile, and generated result is written to browser `sessionStorage`.
 9. `/results` validates that payload before displaying summaries, ranked eligible programs, unranked verification-required and not-eligible programs, explanations, source notes, and warnings.
@@ -112,6 +112,14 @@ If `/assessment` has neither a valid mode record nor a valid legacy Version 1 dr
 Five Quick RIASEC scenario responses remain in React state during the assessment. A backward-compatible optional `quickInterestResponses` field is added to the Version 1 assessment draft only when Quick Guidance reaches results. Existing drafts without this field keep their previous validation and restoration behavior.
 
 Quick responses are validated before restoration. The recommendation engine receives an empty Version 1 interest-score record for Quick Guidance, so its existing missing-interest evidence behavior applies. No Quick RIASEC score or program RIASEC mapping is passed to the engine in this stage.
+
+### Detailed Guidance interest state
+
+Thirty Detailed RIASEC responses remain in React state during the assessment. A backward-compatible optional `detailedInterestResponses` field is added to the Version 1 assessment draft only when the new Detailed Guidance flow reaches results. The validator requires every known question exactly once, rejects malformed or out-of-range values, and rejects a draft containing both Quick and Detailed response fields.
+
+Detailed responses are validated before restoration. The recommendation engine receives an empty Version 1 interest-score record for new Detailed Guidance sessions, so its existing missing-interest evidence behavior applies. No Detailed RIASEC score or program mapping is passed to the engine in this stage.
+
+Drafts without either mode-specific field remain valid Version 1 sessions. They continue through the legacy 22-item interest scoring and profile-building path, even if an older browser tab also contains assessment-mode metadata. The old question data and scorer therefore remain available for backward compatibility and historical tests.
 
 ## Key boundaries
 

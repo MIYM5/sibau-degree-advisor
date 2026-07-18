@@ -6,7 +6,7 @@ This roadmap keeps SIBAU Degree Advisor small enough for a first full web applic
 
 - Version 1 is preserved on the `main` branch and tag `v1.0.0`.
 - Version 2 development occurs on the `version-2.0` branch.
-- Version 2 currently includes assessment-mode architecture, RIASEC data infrastructure, and the five-scenario Quick Guidance interest activity. Quick RIASEC scores remain review-only; existing eligibility and recommendation behavior remains active.
+- Version 2 currently includes assessment-mode architecture, RIASEC data infrastructure, the five-scenario Quick Guidance interest activity, and the 30-item Detailed Guidance RIASEC interest assessment. Both modes keep RIASEC scores review-only; existing eligibility and recommendation behavior remains active.
 
 ## Version 2 staged assessment upgrade
 
@@ -47,9 +47,22 @@ Status: **Complete for review-only use; expert and usability review pending**
 
 Quick Guidance still uses the Version 1 aptitude self-assessment. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
 
+### Stage 4 â€” Detailed Guidance RIASEC interests
+
+Status: **Complete for review-only use; pilot testing and expert review pending**
+
+- Add 30 original activity-preference questions, with five for each RIASEC dimension.
+- Map the five response choices to 0, 25, 50, 75, and 100 before averaging by dimension.
+- Validate complete coverage, IDs, order, dimensions, response values, and malformed data.
+- Preserve answers across navigation and same-session result editing.
+- Display six scores, coverage, top three, code, explanation, evidence label, and disclaimer during review.
+- Keep Detailed RIASEC values disconnected from recommendation scoring.
+- Preserve the Version 1 interest questionnaire for legacy sessions and historical tests.
+
+Detailed Guidance still uses the Version 1 aptitude self-assessment. The project-designed interest instrument is not the official O*NET Interest Profiler or a validated psychometric assessment.
+
 ### Planned later stages
 
-- Replace Detailed Guidance interest content with 30 reviewed RIASEC items.
 - Replace the current aptitude self-assessment with 5 reviewed objective tasks for each mode.
 - Review the RIASEC program mappings with faculty and career-guidance experts.
 - Define how reviewed mode-specific RIASEC evidence maps into the existing scoring dimensions.

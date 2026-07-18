@@ -143,8 +143,8 @@ export function ModeSelection() {
         <p className="mt-2">
           Quick Guidance now includes five RIASEC interest scenarios but still
           uses the existing aptitude self-assessment temporarily. Detailed
-          Guidance continues to use the existing interest and aptitude
-          questionnaires while its new content is under development.
+          Guidance now includes 30 RIASEC activity-preference questions and
+          also retains the existing aptitude self-assessment temporarily.
         </p>
       </aside>
 
