@@ -6,7 +6,7 @@ This roadmap keeps SIBAU Degree Advisor small enough for a first full web applic
 
 - Version 1 is preserved on the `main` branch and tag `v1.0.0`.
 - Version 2 development occurs on the `version-2.0` branch.
-- Version 2 currently includes assessment-mode architecture, RIASEC data infrastructure, the five-scenario Quick Guidance interest activity, and the 30-item Detailed Guidance RIASEC interest assessment. Both modes keep RIASEC scores review-only; existing eligibility and recommendation behavior remains active.
+- Version 2 currently includes assessment-mode architecture, RIASEC data infrastructure, the five-scenario Quick Guidance interest activity, the 30-item Detailed Guidance RIASEC interest assessment, and five shared objective aptitude tasks. All new assessment evidence remains review-only; existing eligibility and recommendation behavior remains active.
 
 ## Version 2 staged assessment upgrade
 
@@ -45,7 +45,7 @@ Status: **Complete for review-only use; expert and usability review pending**
 - Display six scores, top three, code, evidence label, and disclaimer during review.
 - Keep Quick RIASEC values disconnected from recommendation scoring.
 
-Quick Guidance still uses the Version 1 aptitude self-assessment. The activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
+Quick Guidance uses the shared five-task aptitude exercise recorded in Stage 5. The interest activity is not the official O*NET Interest Profiler or a validated psychometric assessment.
 
 ### Stage 4 â€” Detailed Guidance RIASEC interests
 
@@ -59,12 +59,27 @@ Status: **Complete for review-only use; pilot testing and expert review pending*
 - Keep Detailed RIASEC values disconnected from recommendation scoring.
 - Preserve the Version 1 interest questionnaire for legacy sessions and historical tests.
 
-Detailed Guidance still uses the Version 1 aptitude self-assessment. The project-designed interest instrument is not the official O*NET Interest Profiler or a validated psychometric assessment.
+Detailed Guidance uses the shared five-task aptitude exercise recorded in Stage 5. The project-designed interest instrument is not the official O*NET Interest Profiler or a validated psychometric assessment.
+
+### Stage 5 â€” Shared brief aptitude exercise
+
+Status: **Complete for review-only use; pilot testing and expert review pending**
+
+- Add five original objective multiple-choice tasks covering selected reasoning areas.
+- Use one shared task bank for Quick and Detailed Guidance.
+- Keep correct-answer metadata outside user-facing task objects and component props.
+- Score one point per correct response and show total, overall percentage, coverage, and `Limited` confidence.
+- Display per-task Correct/Incorrect outcomes without dimension-level aptitude percentages.
+- Store new responses in version-2 session and recommendation payloads.
+- Preserve the Version 1 18-item aptitude modules for older sessions and historical tests.
+- Keep brief aptitude results disconnected from recommendation scoring.
+
+The five tasks are original project content, not a validated psychometric instrument or a complete measure of aptitude. Client-side answer-key separation is not a security boundary.
 
 ### Planned later stages
 
-- Replace the current aptitude self-assessment with 5 reviewed objective tasks for each mode.
 - Review the RIASEC program mappings with faculty and career-guidance experts.
+- Pilot and review the five aptitude tasks with relevant educational-measurement experts.
 - Define how reviewed mode-specific RIASEC evidence maps into the existing scoring dimensions.
 - Add validation and regression tests before activating new scoring inputs.
 

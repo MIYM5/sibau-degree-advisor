@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:brief-aptitude": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/brief-aptitude-tests scripts/test-brief-aptitude-assessment.ts && node .next/brief-aptitude-tests/scripts/test-brief-aptitude-assessment.js",
     "test:detailed-interest": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/detailed-interest-tests scripts/test-detailed-riasec-assessment.ts && node .next/detailed-interest-tests/scripts/test-detailed-riasec-assessment.js",
     "test:quick-interest": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/quick-interest-tests scripts/test-quick-interest-assessment.ts src/data/quick-interest-scenarios.ts src/lib/quick-interest-assessment.ts src/types/quick-interest.ts src/types/riasec.ts src/types/program.ts && node .next/quick-interest-tests/scripts/test-quick-interest-assessment.js",
     "test:riasec-data": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/riasec-data-tests scripts/test-riasec-data.ts src/data/program-riasec-weights.ts src/data/programs.ts src/lib/validate-riasec-data.ts src/types/program.ts src/types/riasec.ts && node .next/riasec-data-tests/scripts/test-riasec-data.js",

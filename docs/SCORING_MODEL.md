@@ -87,11 +87,25 @@ DetailedDimensionScore = sum(mapped response scores) / valid responses in dimens
 
 Overall coverage is the number of valid answers divided by 30 and expressed as a percentage. Per-dimension coverage is the number of valid answers divided by five. The active flow requires 100% coverage before continuing. Full precision is preserved internally, and the existing deterministic R-I-A-S-E-C tie order generates the top three and three-letter code. Complete Detailed results use the evidence label `Stronger interest evidence`.
 
-No active recommendation formula changes in this stage. Quick and Detailed RIASEC scores are not copied into `StudentProfile.interestScores`, matched against program RIASEC mappings, or sent to the recommendation engine. The engine's existing missing-interest handling applies to new Quick and Detailed sessions. Valid legacy Version 1 sessions still use their original 11 interest dimensions and scoring. Both modes temporarily retain the Version 1 aptitude self-assessment, 50/30/20 final formula, rankings, confidence, and results behavior.
+No active recommendation formula changes in this stage. Quick and Detailed RIASEC scores are not copied into `StudentProfile.interestScores`, matched against program RIASEC mappings, or sent to the recommendation engine. The engine's existing missing-interest handling applies to new Quick and Detailed sessions. Valid legacy Version 1 sessions still use their original 11 interest dimensions and scoring.
 
 The Detailed questions are original project-designed items informed by RIASEC. They are not official O*NET Interest Profiler items or a validated psychometric assessment and require pilot testing and expert review.
 
-### Aptitude suitability
+### Version 2 brief aptitude evidence
+
+Both Quick and Detailed Guidance use the same five objective tasks. Correct responses receive 1 point and incorrect responses receive 0:
+
+```text
+BriefAptitudePercentage = (correct answers / 5) Ã— 100
+```
+
+Answered coverage is the number of valid task responses divided by five and expressed as a percentage. Full precision is preserved internally and values are rounded only for display. Confidence is always labeled `Limited` because one task per selected reasoning area cannot support a complete dimension-level aptitude claim.
+
+Review displays each task as `Correct` or `Incorrect`, plus the total correct and overall percentage. It does not display a Numerical, Logical, Verbal, Spatial and Technical, or Data Interpretation aptitude percentage. The result is not copied into `StudentProfile.aptitudeScores` and does not enter recommendation scoring yet. The existing missing-aptitude behavior therefore applies to new Version 2 sessions.
+
+These five tasks are original project content. They are not a validated psychometric instrument and do not provide a complete measure of aptitude. The answer key is separated from user-facing task data and component props, but client-side scoring is not a security boundary.
+
+### Legacy Version 1 aptitude suitability
 
 Convert self-assessment responses to a consistent 0–100 scale, then calculate:
 
@@ -100,9 +114,9 @@ AptitudeScore = sum(aptitude dimension score × applicable program weight)
                 / sum(applicable program weights)
 ```
 
-The aptitude section is a self-assessment, not a clinical, psychometric, or official admissions test. Missing and out-of-range responses follow the same handling as interest responses.
+The previous aptitude section is a self-assessment, not a clinical, psychometric, or official admissions test. Missing and out-of-range responses follow the same handling as interest responses.
 
-The MVP aptitude self-assessment uses three statements for each of the six aptitude dimensions. Each response is mapped before averaging within its dimension:
+The Version 1 aptitude self-assessment uses three statements for each of the six aptitude dimensions. It is retired from new Version 2 flows but remains available for compatible old sessions and historical tests. Each response is mapped before averaging within its dimension:
 
 - 1 (Strongly Disagree) = 0
 - 2 (Disagree) = 25

@@ -6,6 +6,7 @@ import {
   buildDetailedStudentProfile,
   buildQuickStudentProfile,
   buildStudentProfile,
+  buildVersion2StudentProfile,
   type CompletedAssessmentData,
 } from "./assessment-to-student-profile";
 import {
@@ -15,9 +16,11 @@ import {
 } from "./assessment-form";
 import type { AptitudeResponses } from "./aptitude-assessment";
 import type { InterestResponses } from "./interest-assessment";
+import { calculateBriefAptitudeAssessment } from "./brief-aptitude-assessment";
 import { calculateDetailedRiasecAssessment } from "./detailed-riasec-assessment";
 import { calculateQuickInterestAssessment } from "./quick-interest-assessment";
 import type { DetailedRiasecResponse } from "../types/detailed-interest";
+import type { BriefAptitudeResponse } from "../types/brief-aptitude";
 import type { IntermediateGroup } from "../types/program";
 import type { QuickInterestResponse } from "../types/quick-interest";
 import type { RecommendationResult } from "../types/recommendation";
@@ -29,6 +32,7 @@ export const RECOMMENDATION_SESSION_KEY =
   "sibau-degree-advisor:recommendations:v1";
 
 export interface AssessmentSessionDraft {
+  schemaVersion?: 2;
   name: string;
   intermediateGroup: IntermediateGroup;
   subjectRows: SubjectMarkDraft[];
@@ -36,10 +40,11 @@ export interface AssessmentSessionDraft {
   aptitudeResponses: AptitudeResponses;
   quickInterestResponses?: QuickInterestResponse[];
   detailedInterestResponses?: DetailedRiasecResponse[];
+  briefAptitudeResponses?: BriefAptitudeResponse[];
 }
 
 export interface RecommendationSessionPayload {
-  version: 1;
+  version: 1 | 2;
   createdAt: string;
   assessmentDraft: AssessmentSessionDraft;
   studentProfile: StudentProfile;
@@ -99,6 +104,7 @@ export function isAssessmentSessionDraft(
 ): value is AssessmentSessionDraft {
   if (
     !isRecord(value) ||
+    (value.schemaVersion !== undefined && value.schemaVersion !== 2) ||
     typeof value.name !== "string" ||
     typeof value.intermediateGroup !== "string" ||
     !Array.isArray(value.subjectRows) ||
@@ -118,11 +124,26 @@ export function isAssessmentSessionDraft(
     value.detailedInterestResponses === undefined
       ? null
       : calculateDetailedRiasecAssessment(value.detailedInterestResponses);
+  const briefAptitudeAssessment =
+    value.briefAptitudeResponses === undefined
+      ? null
+      : calculateBriefAptitudeAssessment(value.briefAptitudeResponses);
   if (quickInterestAssessment && !quickInterestAssessment.isValid) return false;
   if (detailedInterestAssessment && !detailedInterestAssessment.isValid) {
     return false;
   }
+  if (briefAptitudeAssessment && !briefAptitudeAssessment.isValid) return false;
   if (quickInterestAssessment && detailedInterestAssessment) return false;
+  if (briefAptitudeAssessment && value.schemaVersion !== 2) return false;
+  if (value.schemaVersion === 2 && !briefAptitudeAssessment) return false;
+  if (
+    briefAptitudeAssessment &&
+    Number(Boolean(quickInterestAssessment)) +
+      Number(Boolean(detailedInterestAssessment)) !==
+      1
+  ) {
+    return false;
+  }
 
   const completedAssessment: CompletedAssessmentData = {
     name: value.name,
@@ -138,11 +159,18 @@ export function isAssessmentSessionDraft(
     subjectMarks: toSubjectMarks(value.subjectRows),
     aptitudeResponses: value.aptitudeResponses,
   };
-  const profileBuild = quickInterestAssessment
-    ? buildQuickStudentProfile(reviewOnlyProfileData)
-    : detailedInterestAssessment
-      ? buildDetailedStudentProfile(reviewOnlyProfileData)
-      : buildStudentProfile(completedAssessment);
+  const profileBuild = briefAptitudeAssessment
+    ? buildVersion2StudentProfile({
+        name: value.name,
+        intermediateGroup: value.intermediateGroup as IntermediateGroup,
+        subjectMarks: toSubjectMarks(value.subjectRows),
+        briefAptitudeResponses: briefAptitudeAssessment.responses,
+      })
+    : quickInterestAssessment
+      ? buildQuickStudentProfile(reviewOnlyProfileData)
+      : detailedInterestAssessment
+        ? buildDetailedStudentProfile(reviewOnlyProfileData)
+        : buildStudentProfile(completedAssessment);
 
   return subjectValidation.isValid && profileBuild.isValid;
 }
@@ -239,7 +267,7 @@ export function createRecommendationSessionPayload(
   recommendationResult: RecommendationEngineResult,
 ): RecommendationSessionPayload {
   return {
-    version: 1,
+    version: assessmentDraft.schemaVersion === 2 ? 2 : 1,
     createdAt: new Date().toISOString(),
     assessmentDraft,
     studentProfile,
@@ -256,7 +284,7 @@ export function parseRecommendationSessionPayload(
     const value: unknown = JSON.parse(serialized);
     if (
       !isRecord(value) ||
-      value.version !== 1 ||
+      (value.version !== 1 && value.version !== 2) ||
       typeof value.createdAt !== "string" ||
       Number.isNaN(Date.parse(value.createdAt)) ||
       !isAssessmentSessionDraft(value.assessmentDraft) ||
@@ -265,23 +293,35 @@ export function parseRecommendationSessionPayload(
       return null;
     }
 
+    const expectedPayloadVersion =
+      value.assessmentDraft.schemaVersion === 2 ? 2 : 1;
+    if (value.version !== expectedPayloadVersion) return null;
+
     const reviewOnlyProfileData = {
       name: value.assessmentDraft.name,
       intermediateGroup: value.assessmentDraft.intermediateGroup,
       subjectMarks: toSubjectMarks(value.assessmentDraft.subjectRows),
       aptitudeResponses: value.assessmentDraft.aptitudeResponses,
     };
-    const rebuilt = value.assessmentDraft.quickInterestResponses
-      ? buildQuickStudentProfile(reviewOnlyProfileData)
-      : value.assessmentDraft.detailedInterestResponses
-        ? buildDetailedStudentProfile(reviewOnlyProfileData)
-        : buildStudentProfile({
-            name: value.assessmentDraft.name,
-            intermediateGroup: value.assessmentDraft.intermediateGroup,
-            subjectMarks: toSubjectMarks(value.assessmentDraft.subjectRows),
-            interestResponses: value.assessmentDraft.interestResponses,
-            aptitudeResponses: value.assessmentDraft.aptitudeResponses,
-          });
+    const rebuilt = value.assessmentDraft.briefAptitudeResponses
+      ? buildVersion2StudentProfile({
+          name: value.assessmentDraft.name,
+          intermediateGroup: value.assessmentDraft.intermediateGroup,
+          subjectMarks: toSubjectMarks(value.assessmentDraft.subjectRows),
+          briefAptitudeResponses:
+            value.assessmentDraft.briefAptitudeResponses,
+        })
+      : value.assessmentDraft.quickInterestResponses
+        ? buildQuickStudentProfile(reviewOnlyProfileData)
+        : value.assessmentDraft.detailedInterestResponses
+          ? buildDetailedStudentProfile(reviewOnlyProfileData)
+          : buildStudentProfile({
+              name: value.assessmentDraft.name,
+              intermediateGroup: value.assessmentDraft.intermediateGroup,
+              subjectMarks: toSubjectMarks(value.assessmentDraft.subjectRows),
+              interestResponses: value.assessmentDraft.interestResponses,
+              aptitudeResponses: value.assessmentDraft.aptitudeResponses,
+            });
     if (
       !rebuilt.isValid ||
       JSON.stringify(rebuilt.profile) !== JSON.stringify(value.studentProfile)

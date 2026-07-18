@@ -83,6 +83,7 @@ The editable draft supports route-to-route navigation within one browser-tab ses
 
 | Field | Purpose |
 | --- | --- |
+| `schemaVersion` | Optional draft schema marker. New Version 2 drafts use `2`; older drafts omit it. |
 | `name` | Current student display name. |
 | `intermediateGroup` | Selected Intermediate group. |
 | `subjectRows` | Editable subject rows, including whether a row is optional. |
@@ -90,6 +91,7 @@ The editable draft supports route-to-route navigation within one browser-tab ses
 | `aptitudeResponses` | Responses keyed by the typed aptitude-question IDs. |
 | `quickInterestResponses` | Optional complete five-scenario response list used only by Quick Guidance. Absent from legacy and Detailed drafts. |
 | `detailedInterestResponses` | Optional complete 30-question response list used only by the new Detailed Guidance flow. Absent from Quick and legacy drafts. |
+| `briefAptitudeResponses` | Optional complete five-task response list shared by new Quick and Detailed sessions. Required when `schemaVersion` is `2`. |
 
 The draft is validated before it is restored. It is not a second domain model and is converted into the shared `StudentProfile` before recommendation logic runs.
 
@@ -113,7 +115,7 @@ Each mode has typed metadata:
 | `aptitudeQuestionCount` | Planned number of objective aptitude tasks. |
 | `evidenceLabel` | Plain-language strength label for the guidance. |
 
-Quick Guidance uses 5 broad interest scenarios, and Detailed Guidance uses 30 RIASEC interest items. Both modes are planned for 5 objective aptitude tasks but temporarily use the existing 18-item Version 1 aptitude self-assessment.
+Quick Guidance uses 5 broad interest scenarios, and Detailed Guidance uses 30 RIASEC interest items. Both modes use the same 5 objective aptitude tasks.
 
 ## Assessment-mode session payload
 
@@ -177,13 +179,29 @@ Detailed RIASEC scores are review-only and use the evidence label `Stronger inte
 
 These questions are original project-designed items informed by RIASEC. They are not official O*NET Interest Profiler items or a validated psychometric assessment and require pilot testing and expert review.
 
+## Brief aptitude assessment
+
+Version 2 uses exactly five original objective multiple-choice tasks: Numerical, Logical, Verbal, Spatial and Technical, and Data Interpretation. Every task contains four user-facing choices. A separate local answer-key record is stored only in the scorer and is not part of `BriefAptitudeTask`, component props, or rendered review data.
+
+| Structure | Purpose |
+| --- | --- |
+| `BriefAptitudeTask` | Stable ID, title, question, dimension, order, and exactly four choices. |
+| `BriefAptitudeChoice` | Stable ID, visible Aâ€“D label, text, and order. It contains no correct-answer flag. |
+| `BriefAptitudeResponse` | Task ID and selected choice ID. |
+| `BriefAptitudeValidationResult` | Valid responses, missing IDs, structured errors, completeness, and validity. |
+| `BriefAptitudeAssessmentResult` | Per-task outcomes, total correct, overall percentage, coverage, `Limited` confidence, and validation details. |
+
+Validation rejects unknown or duplicate task responses, unknown choices, choices from another task, missing tasks, and malformed data. Correct answers receive one point and incorrect answers receive zero. The result never converts a single task into a complete dimension score; review displays outcomes such as `Numerical task: Correct`.
+
+The five-task result is review-only. It is not copied into `StudentProfile.aptitudeScores` or used by recommendation scoring. The exercise is original project content, is not a validated psychometric instrument, and provides only limited evidence. The answer key is present in downloaded client-side MVP code, so separating it from the UI is an architecture boundary rather than a security guarantee.
+
 ## Recommendation session payload
 
 After final Review confirmation, the app stores a versioned session payload containing:
 
 | Field | Purpose |
 | --- | --- |
-| `version` | Payload format version used to reject incompatible data. |
+| `version` | Payload format version used to reject incompatible data. Legacy and pre-brief payloads use `1`; new brief-aptitude payloads use `2`. |
 | `createdAt` | ISO timestamp for the browser-session handoff. |
 | `assessmentDraft` | Editable values used by **Edit My Answers**. |
 | `studentProfile` | Validated, normalized profile passed to the recommendation engine. |

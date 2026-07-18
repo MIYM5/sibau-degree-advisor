@@ -4,7 +4,7 @@
 
 SIBAU Degree Advisor is a single Next.js application with local, version-controlled program data. The design keeps official evidence, eligibility decisions, and suitability scoring separate so each can be reviewed and tested independently.
 
-Version 1 is preserved on `main` and tag `v1.0.0`. Version 2 architecture work takes place on `version-2.0`. Quick and Detailed Guidance now have separate RIASEC interest collection and review presentation. Recommendation scoring, eligibility, results ranking, and the temporary Version 1 aptitude assessment remain unchanged.
+Version 1 is preserved on `main` and tag `v1.0.0`. Version 2 architecture work takes place on `version-2.0`. Quick and Detailed Guidance have separate RIASEC interest collection and share one five-task objective aptitude exercise. Recommendation scoring, eligibility, and results ranking remain unchanged.
 
 ## Planned layers
 
@@ -74,9 +74,9 @@ scripts/                # Development validation and focused tests
 1. **Start Assessment** opens `/assessment/mode`.
 2. The student selects Quick Guidance or Detailed Guidance. A dedicated, versioned session record stores the choice.
 3. Both modes continue to `/assessment` for basic information and subject marks.
-4. Quick Guidance completes five project-designed RIASEC scenarios. Detailed Guidance completes 30 project-designed RIASEC activity-preference questions, with five questions for each dimension. Both modes temporarily continue to the Version 1 aptitude self-assessment.
-5. The Review step shows the selected mode's six RIASEC scores, top-three profile, code, evidence label, coverage, and disclaimer. It keeps editable answers in React state until the student selects **View My Recommendations**.
-6. `assessment-to-student-profile.ts` creates the existing `StudentProfile` shape. Quick and Detailed RIASEC scores are deliberately omitted from its Version 1 `interestScores`, so they remain review-only. Valid legacy Version 1 sessions continue to rebuild their original 11-dimension interest scores.
+4. Quick Guidance completes five project-designed RIASEC scenarios. Detailed Guidance completes 30 project-designed RIASEC activity-preference questions, with five questions for each dimension. Both modes then complete the same five objective aptitude tasks.
+5. The Review step shows the selected mode's RIASEC profile plus five aptitude-task outcomes, total correct, overall percentage, `Limited` confidence, and disclaimers. It keeps editable answers in React state until the student selects **View My Recommendations**.
+6. `assessment-to-student-profile.ts` creates the existing `StudentProfile` shape. Version 2 RIASEC and brief aptitude results are deliberately omitted from the legacy `interestScores` and `aptitudeScores`, so they remain review-only. Valid older sessions continue to rebuild through their original Version 1 scoring path.
 7. The recommendation engine checks eligibility first, calculates suitability without changing eligibility, and ranks only eligible programs.
 8. A versioned payload containing the editable assessment draft, normalized profile, and generated result is written to browser `sessionStorage`.
 9. `/results` validates that payload before displaying summaries, ranked eligible programs, unranked verification-required and not-eligible programs, explanations, source notes, and warnings.
@@ -120,6 +120,14 @@ Thirty Detailed RIASEC responses remain in React state during the assessment. A 
 Detailed responses are validated before restoration. The recommendation engine receives an empty Version 1 interest-score record for new Detailed Guidance sessions, so its existing missing-interest evidence behavior applies. No Detailed RIASEC score or program mapping is passed to the engine in this stage.
 
 Drafts without either mode-specific field remain valid Version 1 sessions. They continue through the legacy 22-item interest scoring and profile-building path, even if an older browser tab also contains assessment-mode metadata. The old question data and scorer therefore remain available for backward compatibility and historical tests.
+
+### Version 2 brief aptitude state
+
+Both modes use the same five-task bank. The UI receives task titles, questions, dimensions, and choices but no correct-answer metadata. The answer key remains inside the local scoring module and is not passed through component props or rendered HTML. Because scoring still runs in downloaded client-side MVP code, this separation improves architecture but is not a security boundary.
+
+New drafts set `schemaVersion: 2` and store a complete optional `briefAptitudeResponses` list. Their recommendation payload uses version `2`. The session validator requires all five known tasks, known choices belonging to their task, and exactly one Quick or Detailed interest field. It rebuilds a `StudentProfile` with empty legacy interest and aptitude score records so the new evidence remains outside recommendation scoring.
+
+Version 1 payloads and earlier Version 2 mode-specific drafts without `briefAptitudeResponses` remain valid. They retain their original `aptitudeResponses`, rebuild through the old 18-item self-assessment path, and keep payload version `1`. This compatibility path is available for safe editing and migration; it is not used by new Quick or Detailed sessions.
 
 ## Key boundaries
 

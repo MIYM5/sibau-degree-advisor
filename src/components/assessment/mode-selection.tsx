@@ -139,12 +139,11 @@ export function ModeSelection() {
       </div>
 
       <aside className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950 sm:p-6">
-        <p className="font-bold">Temporary Version 2.0 notice</p>
+        <p className="font-bold">About the aptitude exercise</p>
         <p className="mt-2">
-          Quick Guidance now includes five RIASEC interest scenarios but still
-          uses the existing aptitude self-assessment temporarily. Detailed
-          Guidance now includes 30 RIASEC activity-preference questions and
-          also retains the existing aptitude self-assessment temporarily.
+          Both modes use the same five objective reasoning tasks. This brief
+          exercise provides limited evidence and is not a validated
+          psychometric test or a complete measure of aptitude.
         </p>
       </aside>
 

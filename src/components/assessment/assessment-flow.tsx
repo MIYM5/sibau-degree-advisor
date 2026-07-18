@@ -26,6 +26,7 @@ import {
   buildDetailedStudentProfile,
   buildQuickStudentProfile,
   buildStudentProfile,
+  buildVersion2StudentProfile,
 } from "@/lib/assessment-to-student-profile";
 import {
   ASSESSMENT_DRAFT_SESSION_KEY,
@@ -42,6 +43,7 @@ import {
   calculateAptitudeAssessment,
   type AptitudeResponses,
 } from "@/lib/aptitude-assessment";
+import { calculateBriefAptitudeAssessment } from "@/lib/brief-aptitude-assessment";
 import {
   calculateInterestAssessment,
   type InterestResponses,
@@ -59,9 +61,15 @@ import type {
   DetailedRiasecResponse,
   DetailedRiasecResponseValue,
 } from "@/types/detailed-interest";
+import type {
+  BriefAptitudeChoiceId,
+  BriefAptitudeResponse,
+  BriefAptitudeTaskId,
+} from "@/types/brief-aptitude";
 import type { QuickInterestResponseDraft } from "@/types/quick-interest";
 
 import { AptitudeStep } from "./aptitude-step";
+import { BriefAptitudeStep } from "./brief-aptitude-step";
 import { DetailedInterestStep } from "./detailed-interest-step";
 import { InterestStep } from "./interest-step";
 import { ProgressSteps } from "./progress-steps";
@@ -108,6 +116,13 @@ export function AssessmentFlow() {
   );
   const [aptitudeResponses, setAptitudeResponses] = useState<AptitudeResponses>({});
   const aptitudeAssessment = calculateAptitudeAssessment(aptitudeResponses);
+  const [briefAptitudeResponses, setBriefAptitudeResponses] = useState<
+    BriefAptitudeResponse[]
+  >([]);
+  const briefAptitudeAssessment = calculateBriefAptitudeAssessment(
+    briefAptitudeResponses,
+  );
+  const [usesLegacyAptitude, setUsesLegacyAptitude] = useState(false);
   const [recommendationError, setRecommendationError] = useState<string>();
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeMode, setActiveMode] = useState<AssessmentMode | "legacy" | null>(
@@ -125,19 +140,33 @@ export function AssessmentFlow() {
     : null;
   const profileBuild = completedAssessment
     ? activeMode === "quick"
-      ? buildQuickStudentProfile({
-          name: completedAssessment.name,
-          intermediateGroup: completedAssessment.intermediateGroup,
-          subjectMarks: completedAssessment.subjectMarks,
-          aptitudeResponses: completedAssessment.aptitudeResponses,
-        })
-      : activeMode === "detailed"
-        ? buildDetailedStudentProfile({
+      ? usesLegacyAptitude
+        ? buildQuickStudentProfile({
             name: completedAssessment.name,
             intermediateGroup: completedAssessment.intermediateGroup,
             subjectMarks: completedAssessment.subjectMarks,
             aptitudeResponses: completedAssessment.aptitudeResponses,
           })
+        : buildVersion2StudentProfile({
+            name: completedAssessment.name,
+            intermediateGroup: completedAssessment.intermediateGroup,
+            subjectMarks: completedAssessment.subjectMarks,
+            briefAptitudeResponses,
+          })
+      : activeMode === "detailed"
+        ? usesLegacyAptitude
+          ? buildDetailedStudentProfile({
+              name: completedAssessment.name,
+              intermediateGroup: completedAssessment.intermediateGroup,
+              subjectMarks: completedAssessment.subjectMarks,
+              aptitudeResponses: completedAssessment.aptitudeResponses,
+            })
+          : buildVersion2StudentProfile({
+              name: completedAssessment.name,
+              intermediateGroup: completedAssessment.intermediateGroup,
+              subjectMarks: completedAssessment.subjectMarks,
+              briefAptitudeResponses,
+            })
         : buildStudentProfile(completedAssessment)
     : null;
   const studentProfile = profileBuild?.isValid ? profileBuild.profile : null;
@@ -176,6 +205,14 @@ export function AssessmentFlow() {
         setSubjectRows(savedDraft.subjectRows);
         setInterestResponses(savedDraft.interestResponses);
         setAptitudeResponses(savedDraft.aptitudeResponses);
+        setBriefAptitudeResponses(savedDraft.briefAptitudeResponses ?? []);
+        setUsesLegacyAptitude(
+          Boolean(
+            (savedDraft.quickInterestResponses ||
+              savedDraft.detailedInterestResponses) &&
+              !savedDraft.briefAptitudeResponses,
+          ),
+        );
         setQuickInterestResponses(savedDraft.quickInterestResponses ?? []);
         setDetailedInterestResponses(
           savedDraft.detailedInterestResponses ?? [],
@@ -292,8 +329,30 @@ export function AssessmentFlow() {
     }));
   }
 
+  function answerBriefAptitudeTask(
+    taskId: BriefAptitudeTaskId,
+    selectedChoiceId: BriefAptitudeChoiceId,
+  ) {
+    setBriefAptitudeResponses((responses) => {
+      const existingIndex = responses.findIndex(
+        (response) => response.taskId === taskId,
+      );
+      const nextResponse = { taskId, selectedChoiceId };
+      if (existingIndex < 0) return [...responses, nextResponse];
+      return responses.map((response, index) =>
+        index === existingIndex ? nextResponse : response,
+      );
+    });
+  }
+
   function continueToReview() {
-    if (!aptitudeAssessment.isValid) return;
+    if (
+      activeMode === "legacy" || usesLegacyAptitude
+        ? !aptitudeAssessment.isValid
+        : !briefAptitudeAssessment.isValid
+    ) {
+      return;
+    }
     setCurrentStep(5);
   }
 
@@ -318,6 +377,16 @@ export function AssessmentFlow() {
       );
       return;
     }
+    if (
+      activeMode !== "legacy" &&
+      !usesLegacyAptitude &&
+      !briefAptitudeAssessment.isValid
+    ) {
+      setRecommendationError(
+        "Complete all five brief aptitude tasks before continuing.",
+      );
+      return;
+    }
 
     const buildResult = profileBuild;
     if (!buildResult) {
@@ -334,6 +403,9 @@ export function AssessmentFlow() {
     setIsGenerating(true);
     try {
       const assessmentDraft: AssessmentSessionDraft = {
+        ...(activeMode !== "legacy" && !usesLegacyAptitude
+          ? { schemaVersion: 2 as const }
+          : {}),
         name,
         intermediateGroup: completedAssessment.intermediateGroup,
         subjectRows,
@@ -344,6 +416,9 @@ export function AssessmentFlow() {
           : activeMode === "detailed"
             ? { detailedInterestResponses: detailedInterestAssessment.responses }
             : {}),
+        ...(activeMode !== "legacy" && !usesLegacyAptitude
+          ? { briefAptitudeResponses: briefAptitudeAssessment.responses }
+          : {}),
       };
       const recommendationResult = generateRecommendations(buildResult.profile);
       const payload = createRecommendationSessionPayload(
@@ -394,8 +469,8 @@ export function AssessmentFlow() {
           {activeMode !== "legacy" && (
             <span className="text-teal-800">
               {activeMode === "quick"
-                ? " · Quick RIASEC interests are active; aptitude remains the current self-assessment."
-                : " · The 30-item Detailed RIASEC interest assessment is active; aptitude remains the current self-assessment."}
+                ? " · Quick RIASEC interests and the five-task aptitude exercise are active."
+                : " · Detailed RIASEC interests and the five-task aptitude exercise are active."}
             </span>
           )}
         </p>
@@ -586,12 +661,21 @@ export function AssessmentFlow() {
           )}
 
           {currentStep === 4 && (
-            <AptitudeStep
-              responses={aptitudeResponses}
-              onAnswer={answerAptitudeQuestion}
-              onBackToInterests={() => setCurrentStep(3)}
-              onComplete={continueToReview}
-            />
+            activeMode === "legacy" || usesLegacyAptitude ? (
+              <AptitudeStep
+                responses={aptitudeResponses}
+                onAnswer={answerAptitudeQuestion}
+                onBackToInterests={() => setCurrentStep(3)}
+                onComplete={continueToReview}
+              />
+            ) : (
+              <BriefAptitudeStep
+                responses={briefAptitudeResponses}
+                onAnswer={answerBriefAptitudeTask}
+                onBackToInterests={() => setCurrentStep(3)}
+                onComplete={continueToReview}
+              />
+            )
           )}
 
           {currentStep === 5 && studentProfile && (
@@ -608,6 +692,13 @@ export function AssessmentFlow() {
                   activeMode === "detailed" &&
                   detailedInterestAssessment.isValid
                     ? detailedInterestAssessment
+                    : undefined
+                }
+                briefAptitudeResult={
+                  activeMode !== "legacy" &&
+                  !usesLegacyAptitude &&
+                  briefAptitudeAssessment.isValid
+                    ? briefAptitudeAssessment
                     : undefined
                 }
               />

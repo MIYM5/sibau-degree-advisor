@@ -10,9 +10,9 @@ Version 1 remains preserved on the `main` branch and at tag `v1.0.0`. Version 2 
 
 The repository contains the approved documentation foundation, the Excel knowledge base, typed program data, validated eligibility and recommendation engines, and a responsive end-to-end frontend flow. Version 2 now includes the architecture for **Quick Guidance** and **Detailed Guidance**, a typed six-dimension RIASEC model, explicit RIASEC mappings for all 14 programs, the five-scenario Quick Guidance interest activity, and the 30-item Detailed Guidance RIASEC interest assessment.
 
-Both modes display their RIASEC scores and three-letter profile during review, but those values are not yet connected to recommendation scoring. Quick Guidance retains its approved five-scenario activity. Detailed Guidance now uses 30 original activity-preference questions, with exactly five per RIASEC dimension and a `Stronger interest evidence` label. Both modes temporarily retain the Version 1 aptitude self-assessment. The Version 1 interest questionnaire remains only for compatible legacy sessions and historical tests.
+Both modes display their RIASEC scores and three-letter profile during review, but those values are not yet connected to recommendation scoring. Quick Guidance retains its approved five-scenario activity. Detailed Guidance uses 30 original activity-preference questions, with exactly five per RIASEC dimension and a `Stronger interest evidence` label. Both modes now use the same five objective aptitude tasks and display only per-task outcomes, an overall score, and `Limited` confidence. The new aptitude result is also review-only and does not enter recommendation scoring.
 
-The Quick and Detailed interest activities are original project-designed items informed by RIASEC. They are not the official O*NET Interest Profiler, are not validated psychometric assessments, and require pilot testing and expert review.
+The Quick and Detailed interest activities and brief aptitude tasks are original project-designed content. They are not official O*NET Interest Profiler items or validated psychometric assessments and require pilot testing and expert review. The previous 18-item aptitude self-assessment and 22-item interest questionnaire remain only for compatible legacy sessions and historical tests.
 
 RIASEC program mappings are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty and career-guidance experts before they influence recommendations.
 
@@ -106,6 +106,7 @@ npm run test:integration
 npm run test:riasec-data
 npm run test:quick-interest
 npm run test:detailed-interest
+npm run test:brief-aptitude
 ```
 
 ## License

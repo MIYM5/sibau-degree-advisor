@@ -7,6 +7,8 @@ import {
   calculateInterestAssessment,
   type InterestResponses,
 } from "./interest-assessment";
+import { calculateBriefAptitudeAssessment } from "./brief-aptitude-assessment";
+import type { BriefAptitudeResponse } from "../types/brief-aptitude";
 import type { IntermediateGroup } from "../types/program";
 import type { StudentProfile, SubjectMark } from "../types/student";
 
@@ -30,6 +32,13 @@ export interface CompletedDetailedAssessmentData {
   intermediateGroup: IntermediateGroup;
   subjectMarks: readonly SubjectMark[];
   aptitudeResponses: AptitudeResponses;
+}
+
+export interface CompletedVersion2AssessmentData {
+  name: string;
+  intermediateGroup: IntermediateGroup;
+  subjectMarks: readonly SubjectMark[];
+  briefAptitudeResponses: readonly BriefAptitudeResponse[];
 }
 
 export type StudentProfileBuildResult =
@@ -181,4 +190,46 @@ export function buildDetailedStudentProfile(
   assessment: CompletedDetailedAssessmentData,
 ): StudentProfileBuildResult {
   return buildRiasecReviewOnlyStudentProfile(assessment);
+}
+
+/**
+ * Builds the current Version 2 profile while the new RIASEC and brief aptitude
+ * evidence remains review-only. Neither result is copied into the legacy
+ * StudentProfile scoring dimensions or sent to recommendation scoring.
+ */
+export function buildVersion2StudentProfile(
+  assessment: CompletedVersion2AssessmentData,
+): StudentProfileBuildResult {
+  const errors: string[] = [];
+
+  if (assessment.name.trim().length === 0) {
+    errors.push("Student name is required.");
+  }
+  if (!intermediateGroups.includes(assessment.intermediateGroup)) {
+    errors.push("A valid Intermediate group is required.");
+  }
+  errors.push(...validateSubjectMarks(assessment.subjectMarks));
+
+  const briefAptitudeAssessment = calculateBriefAptitudeAssessment(
+    assessment.briefAptitudeResponses,
+  );
+  if (!briefAptitudeAssessment.isValid) {
+    errors.push("All five brief aptitude responses must be present and valid.");
+  }
+
+  if (errors.length > 0) {
+    return { isValid: false, profile: null, errors };
+  }
+
+  return {
+    isValid: true,
+    errors: [],
+    profile: {
+      name: assessment.name.trim(),
+      intermediateGroup: assessment.intermediateGroup,
+      subjectMarks: assessment.subjectMarks.map((mark) => ({ ...mark })),
+      interestScores: {},
+      aptitudeScores: {},
+    },
+  };
 }

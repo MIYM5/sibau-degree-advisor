@@ -4,6 +4,10 @@ import {
   aptitudeDimensionOrder,
 } from "@/data/aptitude-questions";
 import {
+  briefAptitudeDimensionLabels,
+  BRIEF_APTITUDE_DISCLAIMER,
+} from "@/data/brief-aptitude-tasks";
+import {
   interestDimensionLabels,
   interestDimensionOrder,
 } from "@/data/interest-questions";
@@ -16,6 +20,7 @@ import {
   riasecDimensionOrder,
 } from "@/types/riasec";
 import type { AssessmentMode } from "@/types/assessment-mode";
+import type { BriefAptitudeAssessmentResult } from "@/types/brief-aptitude";
 import type { DetailedRiasecAssessmentResult } from "@/types/detailed-interest";
 import type { QuickInterestAssessmentResult } from "@/types/quick-interest";
 import type { StudentProfile } from "@/types/student";
@@ -25,6 +30,7 @@ interface ReviewStepProps {
   assessmentMode?: AssessmentMode | "legacy";
   quickInterestResult?: QuickInterestAssessmentResult;
   detailedInterestResult?: DetailedRiasecAssessmentResult;
+  briefAptitudeResult?: BriefAptitudeAssessmentResult;
 }
 
 export function ReviewStep({
@@ -32,6 +38,7 @@ export function ReviewStep({
   assessmentMode,
   quickInterestResult,
   detailedInterestResult,
+  briefAptitudeResult,
 }: ReviewStepProps) {
   const overallPercentage = calculateOverallPercentage(
     studentProfile.subjectMarks,
@@ -53,7 +60,7 @@ export function ReviewStep({
         Review your assessment
       </h1>
       <p className="mt-3 max-w-2xl leading-7 text-slate-600">
-        Check your academic information, interests, and aptitude self-assessment
+        Check your academic information, interests, and aptitude exercise
         before generating your recommendations.
       </p>
 
@@ -66,8 +73,8 @@ export function ReviewStep({
             {isQuickGuidance ? "Quick Guidance" : "Detailed Guidance"}
           </p>
           <p className="mt-2 text-sm leading-6 text-teal-800">
-            RIASEC interests are shown for review only and are not yet used by
-            recommendation scoring.
+            RIASEC interests and brief aptitude results are shown for review
+            only and are not yet used by recommendation scoring.
           </p>
         </div>
       )}
@@ -224,6 +231,74 @@ export function ReviewStep({
         </div>
       )}
 
+      {briefAptitudeResult && (
+        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-950">
+                  Brief aptitude summary
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  {briefAptitudeResult.evidenceCoverage.answeredTasks} of{" "}
+                  {briefAptitudeResult.evidenceCoverage.totalTasks} tasks answered ·{" "}
+                  {briefAptitudeResult.evidenceCoverage.percentageCoverage.toFixed(0)}%
+                  coverage
+                </p>
+              </div>
+              <div className="rounded-xl bg-slate-950 px-4 py-3 text-white sm:text-right">
+                <p className="text-xs font-bold uppercase tracking-wider text-teal-300">
+                  Total score
+                </p>
+                <p className="mt-1 text-2xl font-bold tabular-nums">
+                  {briefAptitudeResult.totalCorrect} / {briefAptitudeResult.totalTasks}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-3 text-sm font-bold">
+              <span className="rounded-full bg-teal-100 px-3 py-1.5 text-teal-800">
+                {briefAptitudeResult.overallPercentage.toFixed(0)}% overall
+              </span>
+              <span className="rounded-full bg-amber-100 px-3 py-1.5 text-amber-800">
+                {briefAptitudeResult.confidenceLabel} confidence
+              </span>
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {briefAptitudeResult.taskResults.map((taskResult) => (
+              <div
+                key={taskResult.taskId}
+                className="flex items-center justify-between gap-4 px-5 py-4 sm:px-6"
+              >
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    {briefAptitudeDimensionLabels[taskResult.dimension]} task
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {taskResult.taskTitle}
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1.5 text-sm font-bold ${
+                    taskResult.isCorrect
+                      ? "bg-teal-100 text-teal-800"
+                      : "bg-slate-200 text-slate-700"
+                  }`}
+                >
+                  {taskResult.isCorrect ? "Correct" : "Incorrect"}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-950 sm:px-6">
+            {BRIEF_APTITUDE_DISCLAIMER}
+          </div>
+        </div>
+      )}
+
+      {!briefAptitudeResult && (
       <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
           <h2 className="text-lg font-bold text-slate-950">Aptitude summary</h2>
@@ -279,6 +354,7 @@ export function ReviewStep({
           psychometric test.
         </div>
       </div>
+      )}
 
       {assessmentMode !== "quick" && assessmentMode !== "detailed" && (
         <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">

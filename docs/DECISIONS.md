@@ -104,14 +104,22 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Date:** 2026-07-18
 - **Context:** Detailed Guidance needs broader interest evidence than the five Quick scenarios without copying official O*NET Interest Profiler items or claiming psychometric validity.
 - **Decision:** Use 30 original project-designed activity-preference statements, with five questions for each RIASEC dimension. Map Strongly Dislike through Strongly Like to 0, 25, 50, 75, and 100, then use the arithmetic mean within each dimension. Require all 30 answers, preserve full precision, use the stable R-I-A-S-E-C tie order, and label complete results `Stronger interest evidence`.
-- **Consequences:** Detailed Guidance now shows six scores, coverage, a top-three profile, a code, and a student-friendly explanation during review. The new scores are not copied into `StudentProfile.interestScores` or used by recommendation scoring. The Version 1 interest questionnaire remains available only for compatible legacy sessions and historical tests. Both active modes temporarily retain the Version 1 aptitude self-assessment. The new items require pilot testing and review by career-guidance and educational-measurement experts.
+- **Consequences:** Detailed Guidance now shows six scores, coverage, a top-three profile, a code, and a student-friendly explanation during review. The new scores are not copied into `StudentProfile.interestScores` or used by recommendation scoring. The Version 1 interest questionnaire remains available only for compatible legacy sessions and historical tests. The later shared aptitude decision is recorded in D-014. The new items require pilot testing and review by career-guidance and educational-measurement experts.
+
+## D-014 â€” Use five shared objective aptitude tasks in Version 2
+
+- **Status:** Accepted for limited review display; validation and recommendation integration remain pending
+- **Date:** 2026-07-18
+- **Context:** Quick and Detailed Guidance need a short objective alternative to the Version 1 18-item aptitude self-rating questionnaire without overstating evidence from one task per reasoning area.
+- **Decision:** Use the same five original multiple-choice tasks in both modes: Numerical, Logical, Verbal, Spatial and Technical, and Data Interpretation. Award one point per correct answer, show the overall percentage and per-task Correct/Incorrect outcomes, and always label confidence `Limited`. Keep the answer key in the local scorer rather than user-facing task objects or component props. Use version-2 session payloads for new responses while accepting older payloads.
+- **Consequences:** New Version 2 sessions no longer use the 18-item aptitude questionnaire. Brief results are not copied into `StudentProfile.aptitudeScores` or used by recommendation scoring. The Version 1 data, scorer, component, and session path remain for safe compatibility and historical tests. Because the scorer is downloaded client-side, answer-key separation is not a security boundary. The tasks require pilot testing, accessibility review, item-quality review, and a future decision about whether and how limited evidence may enter recommendations.
 
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?
 - How should the BS Mathematics source conflict be resolved for production?
 - Is the Associate Degree in Physical Education & Sports Sciences inside the final undergraduate recommendation scope?
-- Which response and scoring design should replace the temporary Version 1 aptitude self-assessment?
+- How, if at all, should the limited five-task aptitude result enter recommendation scoring after validation?
 - Which experts will review the Version 2 RIASEC program mappings, and what evidence will support revisions?
 - How should reviewed Quick and Detailed RIASEC evidence map into the active interest suitability component?
 - Should the forced most/second/least format be retained after student usability and expert review?
