@@ -11,6 +11,24 @@ const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
 const HTTP_TIMEOUT_MS = 30_000;
 const DATABASE_TIMEOUT_MS = 15_000;
 const CLEANUP_TIMEOUT_MS = 2_000;
+export const RESEARCH_VERIFICATION_RPC_NAME =
+  "verify_research_submission_counts";
+
+const VERIFICATION_FIELDS = [
+  "submission_exists",
+  "assessment_id",
+  "participant_count",
+  "consent_count",
+  "assessment_count",
+  "subject_mark_count",
+  "interest_response_count",
+  "riasec_result_count",
+  "aptitude_response_count",
+  "aptitude_result_count",
+  "recommendation_result_count",
+  "feedback_count",
+  "contact_count",
+] as const;
 
 interface EnvironmentSource {
   [key: string]: string | undefined;
@@ -182,6 +200,22 @@ interface ApiResponseBody {
   diagnostic?: unknown;
 }
 
+export interface ResearchSubmissionVerification {
+  submissionExists: boolean;
+  assessmentId: string | null;
+  participantCount: number;
+  consentCount: number;
+  assessmentCount: number;
+  subjectMarkCount: number;
+  interestResponseCount: number;
+  riasecResultCount: number;
+  aptitudeResponseCount: number;
+  aptitudeResultCount: number;
+  recommendationResultCount: number;
+  feedbackCount: number;
+  contactCount: number;
+}
+
 function safeDiagnosticValue(value: unknown): string {
   return typeof value === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(value)
     ? value
@@ -255,51 +289,89 @@ async function postSubmission(
   });
 }
 
-async function rowCount(
-  resources: LocalResearchTestResources,
-  database: SupabaseClient,
-  table: string,
-  column: string,
-  value: string,
-  stage: string,
-): Promise<number> {
-  const result = await resources.runWithTimeout(
-    `${stage}: ${table}`,
-    DATABASE_TIMEOUT_MS,
-    async (signal) =>
-      database
-        .from(table)
-        .select("*", { count: "exact", head: true })
-        .eq(column, value)
-        .abortSignal(signal),
-  );
-  if (result.error || result.count === null) {
-    throw new Error(`${stage} failed while counting ${table}.`);
-  }
-  return result.count;
+function isCount(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) >= 0;
 }
 
-async function assessmentIdFor(
+/** Parse the one aggregate row returned by the verification RPC. */
+export function parseResearchVerificationRpcResult(
+  value: unknown,
+): ResearchSubmissionVerification | null {
+  if (!Array.isArray(value) || value.length !== 1) return null;
+  const row = value[0];
+  if (typeof row !== "object" || row === null || Array.isArray(row)) return null;
+
+  const record = row as Record<string, unknown>;
+  const fields = Object.keys(record);
+  if (
+    fields.length !== VERIFICATION_FIELDS.length ||
+    !VERIFICATION_FIELDS.every((field) => fields.includes(field))
+  ) {
+    return null;
+  }
+
+  const counts = VERIFICATION_FIELDS.slice(2).map((field) => record[field]);
+  if (
+    typeof record.submission_exists !== "boolean" ||
+    !(
+      record.assessment_id === null ||
+      typeof record.assessment_id === "string"
+    ) ||
+    !counts.every(isCount)
+  ) {
+    return null;
+  }
+
+  if (
+    record.submission_exists !== (record.assessment_id !== null) ||
+    (!record.submission_exists && counts.some((count) => count !== 0))
+  ) {
+    return null;
+  }
+
+  return {
+    submissionExists: record.submission_exists,
+    assessmentId: record.assessment_id,
+    participantCount: record.participant_count as number,
+    consentCount: record.consent_count as number,
+    assessmentCount: record.assessment_count as number,
+    subjectMarkCount: record.subject_mark_count as number,
+    interestResponseCount: record.interest_response_count as number,
+    riasecResultCount: record.riasec_result_count as number,
+    aptitudeResponseCount: record.aptitude_response_count as number,
+    aptitudeResultCount: record.aptitude_result_count as number,
+    recommendationResultCount: record.recommendation_result_count as number,
+    feedbackCount: record.feedback_count as number,
+    contactCount: record.contact_count as number,
+  };
+}
+
+async function fetchSubmissionVerification(
   resources: LocalResearchTestResources,
   database: SupabaseClient,
   submissionId: string,
   stage: string,
-): Promise<string> {
+): Promise<ResearchSubmissionVerification> {
   const result = await resources.runWithTimeout(
-    `${stage}: assessment lookup`,
+    `${stage}: verification RPC`,
     DATABASE_TIMEOUT_MS,
     async (signal) =>
       database
-        .from("assessments")
-        .select("id")
-        .eq("submission_id", submissionId)
-        .abortSignal(signal)
-        .single(),
+        .rpc(RESEARCH_VERIFICATION_RPC_NAME, {
+          p_submission_id: submissionId,
+        })
+        .abortSignal(signal),
   );
-  if (result.error || typeof result.data?.id !== "string") {
-    throw new Error(`${stage} failed during assessment lookup.`);
+  if (result.error) {
+    const safeCode =
+      typeof result.error.code === "string" ? result.error.code : "unavailable";
+    throw new Error(`${stage} verification RPC failed (${safeCode}).`);
   }
-  return result.data.id;
+  const verification = parseResearchVerificationRpcResult(result.data);
+  if (!verification) {
+    throw new Error(`${stage} verification RPC returned an invalid shape.`);
+  }
+  return verification;
 }
 
 async function verifySuccessfulWrite(
@@ -310,42 +382,42 @@ async function verifySuccessfulWrite(
   stage: string,
 ): Promise<void> {
   const expectedInterestRows = submission.assessmentMode === "quick" ? 5 : 30;
-  const expected = [
-    ["participants", "id", submission.participantAnonymousId, 1],
-    ["consents", "submission_id", submission.submissionId, 1],
-    ["assessments", "submission_id", submission.submissionId, 1],
-    [
-      "subject_marks",
-      "assessment_id",
-      assessmentId,
-      submission.subjectMarks.length,
-    ],
-    ["interest_responses", "assessment_id", assessmentId, expectedInterestRows],
-    ["riasec_scores", "assessment_id", assessmentId, 1],
-    ["aptitude_responses", "assessment_id", assessmentId, 5],
-    ["aptitude_results", "assessment_id", assessmentId, 1],
-    ["recommendation_results", "assessment_id", assessmentId, programs.length],
-    ["assessment_feedback", "assessment_id", assessmentId, 0],
-    [
-      "participant_contacts",
-      "participant_id",
-      submission.participantAnonymousId,
-      0,
-    ],
-  ] as const;
+  const verification = await fetchSubmissionVerification(
+    resources,
+    database,
+    submission.submissionId,
+    stage,
+  );
+  assert(verification.submissionExists, `${stage} did not find the submission.`);
+  assert(
+    verification.assessmentId === assessmentId,
+    `${stage} found an unexpected assessment identifier.`,
+  );
 
-  for (const [table, column, value, expectedCount] of expected) {
-    const actualCount = await rowCount(
-      resources,
-      database,
-      table,
-      column,
-      value,
-      stage,
-    );
+  const expected = {
+    participantCount: 1,
+    consentCount: 1,
+    assessmentCount: 1,
+    subjectMarkCount: submission.subjectMarks.length,
+    interestResponseCount: expectedInterestRows,
+    riasecResultCount: 1,
+    aptitudeResponseCount: 5,
+    aptitudeResultCount: 1,
+    recommendationResultCount: programs.length,
+    feedbackCount: 0,
+    contactCount: 0,
+  } satisfies Omit<
+    ResearchSubmissionVerification,
+    "submissionExists" | "assessmentId"
+  >;
+
+  for (const [field, expectedCount] of Object.entries(expected)) {
+    const actualCount = verification[
+      field as keyof typeof expected
+    ] as number;
     assert(
       actualCount === expectedCount,
-      `${stage} found an unexpected ${table} row count: expected ${expectedCount}, received ${actualCount}.`,
+      `${stage} found an unexpected ${field}: expected ${expectedCount}, received ${actualCount}.`,
     );
   }
 }
@@ -356,24 +428,16 @@ async function verifyNoWrite(
   submission: ResearchSubmission,
   stage: string,
 ): Promise<void> {
-  const checks = [
-    ["participants", "id", submission.participantAnonymousId],
-    ["consents", "submission_id", submission.submissionId],
-    ["assessments", "submission_id", submission.submissionId],
-  ] as const;
-  for (const [table, column, value] of checks) {
-    assert(
-      (await rowCount(
-        resources,
-        database,
-        table,
-        column,
-        value,
-        stage,
-      )) === 0,
-      `${stage} found an unexpected ${table} row.`,
-    );
-  }
+  const verification = await fetchSubmissionVerification(
+    resources,
+    database,
+    submission.submissionId,
+    stage,
+  );
+  assert(
+    !verification.submissionExists && verification.assessmentId === null,
+    `${stage} found records for a rejected submission.`,
+  );
 }
 
 function confirmFixture(
@@ -452,16 +516,7 @@ export async function runLocalResearchApiTest(
     passStage("Quick POST");
 
     startStage("Quick database verification");
-    const quickAssessmentId = await assessmentIdFor(
-      resources,
-      database,
-      quick.submissionId,
-      "Quick database verification",
-    );
-    assert(
-      quickAssessmentId === quickResponse.body.assessmentId,
-      "Quick API and database assessment IDs differ.",
-    );
+    const quickAssessmentId = quickResponse.body.assessmentId as string;
     await verifySuccessfulWrite(
       resources,
       database,
@@ -543,16 +598,7 @@ export async function runLocalResearchApiTest(
     passStage("incomplete-program rejection");
 
     startStage("final row-count verification");
-    const detailedAssessmentId = await assessmentIdFor(
-      resources,
-      database,
-      detailed.submissionId,
-      "final row-count verification",
-    );
-    assert(
-      detailedAssessmentId === detailedResponse.body.assessmentId,
-      "Detailed API and database assessment IDs differ.",
-    );
+    const detailedAssessmentId = detailedResponse.body.assessmentId as string;
     await verifySuccessfulWrite(
       resources,
       database,

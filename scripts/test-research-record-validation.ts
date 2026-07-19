@@ -38,8 +38,10 @@ import {
   LocalResearchTestResources,
   LocalResearchTestSafetyError,
   LocalResearchTestTimeoutError,
+  RESEARCH_VERIFICATION_RPC_NAME,
   assertLocalSyntheticResearchTestSafety,
   formatLocalApiFailure,
+  parseResearchVerificationRpcResult,
 } from "./test-local-research-api";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -714,6 +716,124 @@ const tests: readonly { name: string; run: () => void | Promise<void> }[] = [
     },
   },
   {
+    name: "verification RPC parser accepts the expected Quick aggregate counts",
+    run: () => {
+      const parsed = parseResearchVerificationRpcResult([
+        {
+          submission_exists: true,
+          assessment_id: "c26baa32-bf64-4f10-bd2f-3f86409e147a",
+          participant_count: 1,
+          consent_count: 1,
+          assessment_count: 1,
+          subject_mark_count: syntheticQuick.subjectMarks.length,
+          interest_response_count: 5,
+          riasec_result_count: 1,
+          aptitude_response_count: 5,
+          aptitude_result_count: 1,
+          recommendation_result_count: programs.length,
+          feedback_count: 0,
+          contact_count: 0,
+        },
+      ]);
+      assert(parsed?.submissionExists, "Quick verification result was rejected.");
+      assert(parsed.subjectMarkCount === syntheticQuick.subjectMarks.length, "Quick subject count changed.");
+      assert(parsed.interestResponseCount === 5, "Quick interest count changed.");
+      assert(parsed.recommendationResultCount === programs.length, "Quick program count changed.");
+    },
+  },
+  {
+    name: "verification RPC parser accepts the expected Detailed aggregate counts",
+    run: () => {
+      const parsed = parseResearchVerificationRpcResult([
+        {
+          submission_exists: true,
+          assessment_id: "c26baa32-bf64-4f10-bd2f-3f86409e147a",
+          participant_count: 1,
+          consent_count: 1,
+          assessment_count: 1,
+          subject_mark_count: syntheticDetailed.subjectMarks.length,
+          interest_response_count: 30,
+          riasec_result_count: 1,
+          aptitude_response_count: 5,
+          aptitude_result_count: 1,
+          recommendation_result_count: programs.length,
+          feedback_count: 0,
+          contact_count: 0,
+        },
+      ]);
+      assert(parsed?.submissionExists, "Detailed verification result was rejected.");
+      assert(parsed.interestResponseCount === 30, "Detailed interest count changed.");
+      assert(parsed.aptitudeResponseCount === 5, "Detailed aptitude count changed.");
+    },
+  },
+  {
+    name: "verification RPC parser represents a missing submission without records",
+    run: () => {
+      const parsed = parseResearchVerificationRpcResult([
+        {
+          submission_exists: false,
+          assessment_id: null,
+          participant_count: 0,
+          consent_count: 0,
+          assessment_count: 0,
+          subject_mark_count: 0,
+          interest_response_count: 0,
+          riasec_result_count: 0,
+          aptitude_response_count: 0,
+          aptitude_result_count: 0,
+          recommendation_result_count: 0,
+          feedback_count: 0,
+          contact_count: 0,
+        },
+      ]);
+      assert(parsed !== null && !parsed.submissionExists, "Missing submission was not represented safely.");
+      assert(parsed.assessmentId === null, "Missing submission returned an assessment ID.");
+    },
+  },
+  {
+    name: "verification RPC parser rejects raw or unexpected fields",
+    run: () => {
+      const result = parseResearchVerificationRpcResult([
+        {
+          submission_exists: false,
+          assessment_id: null,
+          participant_count: 0,
+          consent_count: 0,
+          assessment_count: 0,
+          subject_mark_count: 0,
+          interest_response_count: 0,
+          riasec_result_count: 0,
+          aptitude_response_count: 0,
+          aptitude_result_count: 0,
+          recommendation_result_count: 0,
+          feedback_count: 0,
+          contact_count: 0,
+          raw_interest_response: "must-not-be-returned",
+        },
+      ]);
+      assert(result === null, "Verification parser accepted an unexpected raw field.");
+    },
+  },
+  {
+    name: "verification migration is aggregate-only and service-role-only",
+    run: () => {
+      const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/002_local_verification_rpc.sql"), "utf8");
+      const returnSignature = migration.match(/returns\s+table\s*\(([\s\S]*?)\)\s*language/i)?.[1] ?? "";
+      assert(migration.includes("verify_research_submission_counts"), "Verification RPC is missing.");
+      assert(/p_submission_id\s+uuid/i.test(migration), "Verification RPC does not require a submission UUID.");
+      assert(/security\s+definer/i.test(migration), "Verification RPC is not security definer.");
+      assert(/set\s+search_path\s*=\s*pg_catalog,\s*public/i.test(migration), "Verification RPC search path is not fixed.");
+      assert(/revoke\s+all[\s\S]*from\s+public/i.test(migration), "Public execute was not revoked.");
+      assert(/revoke\s+all[\s\S]*from\s+anon,\s*authenticated/i.test(migration), "Anon and authenticated execute were not revoked.");
+      assert(/grant\s+execute[\s\S]*to\s+service_role/i.test(migration), "Service-role execute was not granted.");
+      assert(!/grant\s+select/i.test(migration), "Verification migration grants table SELECT.");
+      assert(!/create\s+policy/i.test(migration), "Verification migration creates an RLS policy.");
+      for (const rawField of ["obtained_marks", "response_payload", "selected_choice_id", "optional_comment", "contact_value_encrypted"]) {
+        assert(!returnSignature.includes(rawField), `Verification RPC exposes raw field: ${rawField}.`);
+      }
+    },
+  },
+  {
     name: "local harness timeout aborts an unresolved operation and clears its timer",
     run: async () => {
       const resources = new LocalResearchTestResources();
@@ -779,11 +899,16 @@ const tests: readonly { name: string; run: () => void | Promise<void> }[] = [
     },
   },
   {
-    name: "local harness uses the POST API and does not call the database function directly",
+    name: "local harness submits through the POST API and uses only the narrow verification RPC",
     run: () => {
       const harness = readFileSync(resolve(process.cwd(), "scripts/test-local-research-api.ts"), "utf8");
       assert(harness.includes('new URL("/api/research-submissions"'), "Local harness does not use the application API.");
-      assert(!harness.includes(".rpc("), "Local harness calls an RPC directly.");
+      assert(RESEARCH_VERIFICATION_RPC_NAME === "verify_research_submission_counts", "Verification RPC constant changed.");
+      assert(harness.includes(".rpc(RESEARCH_VERIFICATION_RPC_NAME, {"), "Harness does not use the verification RPC.");
+      assert(harness.includes("p_submission_id: submissionId"), "Harness verification is not scoped by submission UUID.");
+      assert(!harness.includes(".from("), "Harness performs a direct table query.");
+      assert(!harness.includes(".select("), "Harness performs a direct SELECT query.");
+      assert(!/\.rpc\(["']submit_research_assessment["']/.test(harness), "Harness bypasses the POST API for submission.");
       assert(!/method:\s*["']GET["']/.test(harness), "Local harness performs a GET request.");
     },
   },
