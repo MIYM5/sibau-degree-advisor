@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 
@@ -25,6 +25,12 @@ import {
   RESEARCH_SUBMISSION_SCHEMA_VERSION,
   type ResearchSubmission,
 } from "../src/types/research-submission";
+import { createSyntheticDetailedResearchSubmission } from "./fixtures/synthetic-detailed-research-submission";
+import { createSyntheticQuickResearchSubmission } from "./fixtures/synthetic-quick-research-submission";
+import {
+  LocalResearchTestSafetyError,
+  assertLocalSyntheticResearchTestSafety,
+} from "./test-local-research-api";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -203,8 +209,40 @@ function invalid(
   assert(result.issues.some((issue) => issue.code === code), `${code}: expected issue was not returned.`);
 }
 
+function localSafetyRejects(
+  environment: Record<string, string | undefined>,
+  expectedCode: string,
+): void {
+  try {
+    assertLocalSyntheticResearchTestSafety(environment);
+  } catch (error) {
+    assert(
+      error instanceof LocalResearchTestSafetyError &&
+        error.code === expectedCode,
+      `Expected local safety refusal ${expectedCode}.`,
+    );
+    return;
+  }
+  throw new Error(`Local safety guard accepted ${expectedCode}.`);
+}
+
+function sourceFiles(directory: string): string[] {
+  return readdirSync(directory).flatMap((name) => {
+    const path = resolve(directory, name);
+    return statSync(path).isDirectory() ? sourceFiles(path) : [path];
+  });
+}
+
 const quick = buildSubmission("quick");
 const detailed = buildSubmission("detailed");
+const syntheticQuick = createSyntheticQuickResearchSubmission();
+const syntheticDetailed = createSyntheticDetailedResearchSubmission();
+const safeLocalEnvironment = {
+  LOCAL_SYNTHETIC_RESEARCH_TEST_ENABLED: "true",
+  LOCAL_RESEARCH_TEST_APP_URL: "http://127.0.0.1:3000",
+  NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321",
+  SUPABASE_SERVICE_ROLE_KEY: "synthetic-local-test-placeholder",
+};
 
 const tests: readonly { name: string; run: () => void }[] = [
   {
@@ -497,6 +535,87 @@ const tests: readonly { name: string; run: () => void }[] = [
       const workbook = readFileSync(resolve(process.cwd(), "data/SIBAU_Degree_Recommendation_Knowledge_Base_PreMedical_Updated.xlsx"));
       const hash = createHash("sha256").update(workbook).digest("hex").toUpperCase();
       assert(hash === "AC40B83DAC8727B39933E031B1ED070DCAA99FB088E6F2DED51A2EB45D9CB80A", "Protected workbook changed.");
+    },
+  },
+  {
+    name: "synthetic Quick fixture passes the authoritative validator",
+    run: () => assert(validateResearchSubmission(syntheticQuick, adultGovernance).isValid, "Synthetic Quick fixture was rejected."),
+  },
+  {
+    name: "synthetic Detailed fixture passes the authoritative validator",
+    run: () => assert(validateResearchSubmission(syntheticDetailed, adultGovernance).isValid, "Synthetic Detailed fixture was rejected."),
+  },
+  {
+    name: "synthetic fixtures are adult-only and cover all generated evidence",
+    run: () => {
+      assert(syntheticQuick.ageGroup === "age_18_or_above" && syntheticDetailed.ageGroup === "age_18_or_above", "Synthetic fixture is not adult-only.");
+      assert(syntheticQuick.interestResponses.length === quickInterestScenarios.length, "Quick fixture coverage is incomplete.");
+      assert(syntheticDetailed.interestResponses.length === detailedRiasecQuestions.length, "Detailed fixture coverage is incomplete.");
+      assert(syntheticQuick.briefAptitudeResponses.length === briefAptitudeTasks.length, "Quick aptitude coverage is incomplete.");
+      assert(syntheticDetailed.briefAptitudeResponses.length === briefAptitudeTasks.length, "Detailed aptitude coverage is incomplete.");
+      assert(syntheticQuick.recommendationResults.length === programs.length && syntheticDetailed.recommendationResults.length === programs.length, "Synthetic recommendation coverage is incomplete.");
+    },
+  },
+  {
+    name: "synthetic fixtures contain no name or contact fields",
+    run: () => {
+      const serialized = JSON.stringify([syntheticQuick, syntheticDetailed]).toLowerCase();
+      for (const field of ["name", "email", "phone", "cnic", "address", "contact"]) {
+        assert(!serialized.includes(`\"${field}\"`), `Synthetic fixture contains disallowed field: ${field}.`);
+      }
+    },
+  },
+  {
+    name: "synthetic fixture identifiers are generated at runtime",
+    run: () => {
+      const another = createSyntheticQuickResearchSubmission();
+      assert(another.submissionId !== syntheticQuick.submissionId, "Submission ID was reused.");
+      assert(another.participantAnonymousId !== syntheticQuick.participantAnonymousId, "Participant ID was reused.");
+    },
+  },
+  {
+    name: "local synthetic test accepts an explicitly enabled local-only configuration",
+    run: () => {
+      const result = assertLocalSyntheticResearchTestSafety(safeLocalEnvironment);
+      assert(result.applicationUrl.hostname === "127.0.0.1" && result.supabaseUrl.hostname === "localhost", "Safe local configuration changed.");
+    },
+  },
+  {
+    name: "local synthetic test refuses a disabled flag",
+    run: () => localSafetyRejects({ ...safeLocalEnvironment, LOCAL_SYNTHETIC_RESEARCH_TEST_ENABLED: "false" }, "explicit_local_flag_required"),
+  },
+  {
+    name: "local synthetic test refuses production mode",
+    run: () => localSafetyRejects({ ...safeLocalEnvironment, NODE_ENV: "production" }, "production_environment_forbidden"),
+  },
+  {
+    name: "local synthetic test refuses a hosted application URL",
+    run: () => localSafetyRejects({ ...safeLocalEnvironment, LOCAL_RESEARCH_TEST_APP_URL: "https://example.org" }, "local_application_url_required"),
+  },
+  {
+    name: "local synthetic test refuses a hosted Supabase URL",
+    run: () => localSafetyRejects({ ...safeLocalEnvironment, NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co" }, "local_supabase_url_required"),
+  },
+  {
+    name: "local harness uses the POST API and does not call the database function directly",
+    run: () => {
+      const harness = readFileSync(resolve(process.cwd(), "scripts/test-local-research-api.ts"), "utf8");
+      assert(harness.includes('new URL("/api/research-submissions"'), "Local harness does not use the application API.");
+      assert(!harness.includes(".rpc("), "Local harness calls an RPC directly.");
+      assert(!/method:\s*["']GET["']/.test(harness), "Local harness performs a GET request.");
+    },
+  },
+  {
+    name: "local harness does not weaken API governance or connect the UI",
+    run: () => {
+      const route = readFileSync(resolve(process.cwd(), "src/app/api/research-submissions/route.ts"), "utf8");
+      assert(route.includes("getResearchGovernanceStatus()"), "API governance check is missing.");
+      assert(!route.includes("LOCAL_SYNTHETIC_RESEARCH_TEST_ENABLED"), "Local test flag bypasses API governance.");
+      const componentSources = sourceFiles(resolve(process.cwd(), "src/components"))
+        .filter((path) => /\.(ts|tsx)$/.test(path))
+        .map((path) => readFileSync(path, "utf8"))
+        .join("\n");
+      assert(!componentSources.includes("/api/research-submissions"), "A UI component calls the research API.");
     },
   },
 ];

@@ -54,6 +54,14 @@ The prepared write path calls the central governance and participant-eligibility
 
 The schema excludes student names by default. It stores raw research responses and derived scores with explicit instrument, questionnaire, scoring-model, and program-data versions. Ethics and legal approval remain external requirements; administrative configuration does not prove either.
 
+## Local synthetic integration testing
+
+The optional `test:research-api-local` harness is a development control, not permission to collect research data. It accepts only `localhost` or `127.0.0.1` application and Supabase hostnames, refuses `NODE_ENV=production`, and requires the exact `LOCAL_SYNTHETIC_RESEARCH_TEST_ENABLED=true` flag in addition to the unchanged API governance gate. The flag defaults to false and is not read by the API route.
+
+Fixtures are adult-only, anonymous, generated at runtime from the real question banks and scoring pipeline, and contain no names or contact fields. The harness uses the public POST boundary for writes; its local service-role credential is used only to count rows belonging to the generated IDs. It never calls the transactional function directly, never deletes unrelated data, and never logs credentials, raw payloads, or participant data. Synthetic local rows may remain until the developer intentionally resets the local Docker database.
+
+Never point this harness at a hosted or production service, add real participant responses to fixtures, commit `.env.local`, or treat a passing local test as ethics, legal, privacy, or production authorization. Restore the research-collection and synthetic-test flags to false after each live run.
+
 ## Scope status
 
 No released versions are currently supported. This policy will be expanded before public deployment to cover dependency updates, access control, data retention, backups, incident response, and responsible disclosure timelines.

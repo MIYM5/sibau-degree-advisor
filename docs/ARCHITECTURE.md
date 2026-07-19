@@ -148,6 +148,12 @@ The route calls `submit_research_assessment(jsonb)`, a service-role-only `SECURI
 
 Every research table has RLS enabled with no permissive anonymous or authenticated policy. The service role bypasses RLS, so exposure of that key or broadening the server route would be critical. `participant_contacts` remains isolated and unused.
 
+### Local synthetic end-to-end harness
+
+`scripts/test-local-research-api.ts` is an explicitly enabled development harness for the local Docker Supabase stack. Its Quick and Detailed fixtures derive responses and results from the existing static question banks, assessment builders, and recommendation engine; fresh anonymous UUIDs are created at runtime. Before any network operation, the harness refuses production mode, a disabled flag, missing local credentials, and any application or Supabase hostname other than `localhost` or `127.0.0.1`.
+
+Valid and invalid records travel through the unchanged `POST /api/research-submissions` boundary. The harness never calls the database function directly. After accepted writes, it uses the local service role only to verify participant, consent, assessment, response, score, and recommendation row counts for its generated IDs. Duplicate, invalid-consent, and incomplete-recommendation cases must create no extra rows. The browser UI remains disconnected, and the harness does not authorize hosted or real research collection.
+
 ### Post-results feedback record
 
 Quick and Detailed results use another dedicated session record for optional feedback:
@@ -211,6 +217,8 @@ Version 1 payloads and earlier mode-specific drafts without `briefAptitudeRespon
 - Integration tests for form-to-result behavior.
 - Accessibility checks for forms, errors, focus, and results.
 - Data-validation tests for IDs, URLs, dates, rule labels, and weight totals.
+- Static and pure tests for synthetic fixture validity and local-harness safety refusals.
+- An opt-in local Docker integration test for the POST research boundary and transactional row counts; it is excluded from ordinary automated runs.
 
 ## Error handling
 

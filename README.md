@@ -22,6 +22,8 @@ A server-only research-governance gate now defaults to `guidance_only`. It can r
 
 Version 2 now includes a disabled-by-default Supabase research schema, a service-role-only server client, a strict Version 1 research-submission validator, and a POST-only transactional API foundation. The assessment and results UI does not call this API, so completed assessments are not submitted or permanently stored. Governance, participant eligibility, operational consent, voluntary research consent, database configuration, and server recalculation must all pass independently before the route can attempt a write.
 
+A separate local-only synthetic integration harness can exercise that boundary against the local Docker Supabase stack. It is disabled by default, refuses hosted URLs and production mode, creates fresh anonymous adult fixture IDs at runtime, and never connects the assessment UI or enables real research collection.
+
 The Quick and Detailed interest activities and brief aptitude tasks are original project-designed content. They are not official O*NET Interest Profiler items or validated psychometric assessments and require pilot testing and expert review. The previous 18-item aptitude self-assessment and 22-item interest questionnaire remain only for compatible legacy sessions and historical tests.
 
 RIASEC program mappings, component weights, and confidence thresholds are project-model assumptions. They are not official SIBAU weightages, were not supplied or endorsed by O*NET, and require review by faculty, career-guidance, and educational-measurement experts.
@@ -128,6 +130,54 @@ npm run test:consent
 npm run test:research-governance
 npm run test:research-validation
 ```
+
+### Optional local synthetic research API test
+
+This test writes clearly synthetic adult Quick and Detailed records to your **local Docker Supabase database only**. Never use participant data, a hosted Supabase project, or production credentials. The ordinary automated checks do not run this live test.
+
+1. Start the local Supabase stack and apply a clean local migration:
+
+   ```bash
+   npx supabase start
+   npx supabase db reset
+   ```
+
+2. Create an uncommitted `.env.local`. Use the local keys printed by the Supabase CLI; do not copy real or hosted credentials into the file or documentation.
+
+   ```dotenv
+   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<local anonymous key from the Supabase CLI>
+   SUPABASE_SERVICE_ROLE_KEY=<local service-role key from the Supabase CLI>
+
+   RESEARCH_DATA_COLLECTION_ENABLED=true
+   RESEARCH_ETHICS_APPROVAL_REFERENCE=LOCAL-SYNTHETIC-TEST-ONLY
+   RESEARCH_ETHICS_COMMITTEE_NAME=Local Synthetic Test Committee
+   RESEARCH_RESPONSIBLE_RESEARCHER=Local Synthetic Test Operator
+   RESEARCH_CONTACT_EMAIL=synthetic-research@example.test
+   PRIVACY_CONTACT_EMAIL=synthetic-privacy@example.test
+   RESEARCH_RETENTION_YEARS=1
+   RESEARCH_WITHDRAWAL_URL=http://localhost:3000/research-information
+   MINOR_RESEARCH_PROCESS_APPROVED=false
+
+   LOCAL_SYNTHETIC_RESEARCH_TEST_ENABLED=true
+   LOCAL_RESEARCH_TEST_APP_URL=http://127.0.0.1:3000
+   ```
+
+3. Run the application locally in one terminal, then run the harness in another:
+
+   ```bash
+   npm run dev
+   npm run test:research-api-local
+   ```
+
+The harness sends two valid synthetic submissions through `POST /api/research-submissions`, checks duplicate and invalid submissions, and verifies only its runtime-generated IDs through the local service role. It does not delete unrelated rows. After testing, restore both flags in `.env.local` to their safe defaults:
+
+```dotenv
+RESEARCH_DATA_COLLECTION_ENABLED=false
+LOCAL_SYNTHETIC_RESEARCH_TEST_ENABLED=false
+```
+
+If any required flag, governance value, local credential, application service, or local Supabase service is missing, the test refuses to proceed or fails without weakening the API gate. `.env.local` and the generated local database rows must never be committed as research evidence or used for real participants.
 
 ## License
 

@@ -162,6 +162,14 @@ This file records decisions that shape SIBAU Degree Advisor. New entries should 
 - **Decision:** Add the official Supabase JavaScript client only. Isolate the service-role client in a `server-only` module and expose one POST-only route. Require request-time governance, participant eligibility, operational and research consent, strict payload validation, and server recalculation of important academic, RIASEC, aptitude, and recommendation values. Write through one service-role-only transactional PostgreSQL function. Enable RLS on all 11 tables with no public policies, keep contacts separate and unused, and leave the UI disconnected.
 - **Consequences:** The database schema can be reviewed and migrated without collecting assessment data. Submission UUID constraints prevent replay, transactions prevent partial records, and no public research reads or direct browser writes exist. The service role bypasses RLS and is therefore a critical secret and security boundary. Minor submissions remain blocked because the approved governance engine still has no minor-eligible participant outcome. Ethics, legal, retention, withdrawal, incident-response, and production-operations approval remain external requirements.
 
+## D-021 - Add a fail-closed local synthetic research API harness
+
+- **Status:** Accepted for local development testing only; production and real-participant collection remain unapproved
+- **Date:** 2026-07-19
+- **Context:** The disconnected research API, governance checks, and transactional schema need an end-to-end verification path without connecting the UI, weakening server controls, using hosted infrastructure, or introducing participant data.
+- **Decision:** Generate adult-only anonymous Quick and Detailed fixtures from the existing question banks and scoring pipeline. Send all writes through the unchanged POST API. Require an exact disabled-by-default test flag, non-production mode, complete adult governance, local credentials, and application and Supabase hostnames limited to `localhost` or `127.0.0.1`. Verify only runtime-generated records with the local service role, including successful child-row counts, duplicate rejection, invalid-consent rejection, and incomplete-recommendation rejection. Do not delete unrelated local rows or log secrets and payloads.
+- **Consequences:** Developers can verify the full local boundary against Docker Supabase while ordinary tests remain network-free. The harness cannot target hosted URLs and creates no UI submission path or API bypass. Its synthetic rows and temporary enabled configuration are local test artifacts, not research evidence or approval; both collection flags must return to false after testing.
+
 ## Open decisions
 
 - Which exact 2026 admission advertisement is the final authority, and what is its direct URL?

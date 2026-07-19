@@ -165,6 +165,20 @@ Status: **Complete as disconnected infrastructure; collection remains disabled a
 
 Research collection still defaults to disabled. Supabase credentials do not activate it. The service role bypasses RLS and must remain server-only. Applying the migration, configuring production credentials, connecting the UI, approving a minor-eligible outcome, and beginning real research collection each require separate authorization and operational review.
 
+### Stage 12 - Local synthetic research API verification
+
+Status: **Complete as an opt-in local development harness; hosted and real-data use remain prohibited**
+
+- Generate fresh anonymous adult Quick and Detailed fixtures from the existing question banks and scoring engine.
+- Require an exact disabled-by-default local test flag, non-production mode, complete adult governance, and local-only application and Supabase URLs.
+- Submit through the unchanged POST route rather than calling the database function directly.
+- Verify accepted table and child-row counts for generated IDs with the local service role.
+- Verify duplicate, invalid-consent, and incomplete-recommendation failures without partial rows.
+- Keep the UI disconnected and keep ordinary automated tests network-free.
+- Leave unrelated local records untouched and restore both collection flags to false after a live run.
+
+This stage proves only that the prepared boundary works against a developer's local Docker stack. It does not authorize hosted Supabase, production configuration, analytics, tracking, participant recruitment, or real research storage.
+
 ### Planned later stages
 
 - Review the RIASEC program mappings with faculty and career-guidance experts.

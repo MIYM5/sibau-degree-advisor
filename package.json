@@ -23,6 +23,7 @@
     "test:consent": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/consent-tests scripts/test-consent.ts && node .next/consent-tests/scripts/test-consent.js",
     "test:research-governance": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/research-governance-tests scripts/test-research-governance.ts src/lib/research-governance.ts src/types/research-governance.ts src/types/consent.ts && node .next/research-governance-tests/scripts/test-research-governance.js",
     "test:research-validation": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/research-validation-tests scripts/test-research-record-validation.ts && node .next/research-validation-tests/scripts/test-research-record-validation.js",
+    "test:research-api-local": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2021 --outDir .next/local-research-api-tests scripts/test-local-research-api.ts && node --env-file=.env.local .next/local-research-api-tests/scripts/test-local-research-api.js",
     "validate:program-data": "tsc --strict --skipLibCheck --module commonjs --moduleResolution node --target ES2020 --outDir .next/program-data-validation scripts/validate-program-data.ts src/data/programs.ts src/lib/validate-program-data.ts src/types/program.ts && node .next/program-data-validation/scripts/validate-program-data.js"
   },
   "dependencies": {
