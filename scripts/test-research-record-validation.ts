@@ -16,6 +16,13 @@ import {
   validateResearchSubmission,
 } from "../src/lib/research-record-validation";
 import { validateResearchGovernanceConfig } from "../src/lib/research-governance";
+import {
+  RESEARCH_RPC_FUNCTION_NAME,
+  RESEARCH_RPC_PARAMETER_NAME,
+  createResearchApiDiagnosticReporter,
+  isSafeLocalResearchDiagnosticsEnabled,
+  parseResearchRpcResult,
+} from "../src/lib/research-api-diagnostics";
 import type { AssessmentMode } from "../src/types/assessment-mode";
 import type { ConsentRecord } from "../src/types/consent";
 import type { ResearchGovernanceValidationResult } from "../src/types/research-governance";
@@ -32,6 +39,7 @@ import {
   LocalResearchTestSafetyError,
   LocalResearchTestTimeoutError,
   assertLocalSyntheticResearchTestSafety,
+  formatLocalApiFailure,
 } from "./test-local-research-api";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -597,6 +605,113 @@ const tests: readonly { name: string; run: () => void | Promise<void> }[] = [
   {
     name: "local synthetic test refuses a hosted Supabase URL",
     run: () => localSafetyRejects({ ...safeLocalEnvironment, NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co" }, "local_supabase_url_required"),
+  },
+  {
+    name: "API diagnostics require every safe local condition",
+    run: () => {
+      assert(isSafeLocalResearchDiagnosticsEnabled(safeLocalEnvironment), "Safe local diagnostics did not enable.");
+      assert(!isSafeLocalResearchDiagnosticsEnabled({ ...safeLocalEnvironment, NODE_ENV: "production" }), "Production diagnostics enabled.");
+      assert(!isSafeLocalResearchDiagnosticsEnabled({ ...safeLocalEnvironment, LOCAL_SYNTHETIC_RESEARCH_TEST_ENABLED: "false" }), "Disabled diagnostics flag was accepted.");
+      assert(!isSafeLocalResearchDiagnosticsEnabled({ ...safeLocalEnvironment, LOCAL_RESEARCH_TEST_APP_URL: "https://example.org" }), "Remote application diagnostics enabled.");
+      assert(!isSafeLocalResearchDiagnosticsEnabled({ ...safeLocalEnvironment, NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co" }), "Remote Supabase diagnostics enabled.");
+    },
+  },
+  {
+    name: "production API error bodies remain generic",
+    run: () => {
+      const events: unknown[] = [];
+      const reporter = createResearchApiDiagnosticReporter(
+        { ...safeLocalEnvironment, NODE_ENV: "production" },
+        (event) => events.push(event),
+      );
+      const body = reporter.attach(
+        {
+          success: false,
+          code: "research_submission_failed",
+          message: "The submission could not be stored.",
+        },
+        {
+          stage: "rpc_response_receipt",
+          code: "rpc_database_error",
+          httpStatus: 500,
+          rpcFunction: RESEARCH_RPC_FUNCTION_NAME,
+          supabaseCode: "42501",
+        },
+      );
+      reporter.log({ stage: "rpc_response_receipt", code: "rpc_database_error" });
+      assert(!("diagnostic" in body), "Production error disclosed diagnostics.");
+      assert(events.length === 0, "Production diagnostics were logged.");
+    },
+  },
+  {
+    name: "local diagnostic logging strips sensitive and unknown fields",
+    run: () => {
+      const events: unknown[] = [];
+      const reporter = createResearchApiDiagnosticReporter(
+        safeLocalEnvironment,
+        (event) => events.push(event),
+      );
+      reporter.log({
+        stage: "rpc_response_receipt",
+        code: "rpc_database_error",
+        httpStatus: 500,
+        rpcFunction: RESEARCH_RPC_FUNCTION_NAME,
+        supabaseCode: "42501",
+        payload: "SENSITIVE_MARKS_AND_RESPONSES",
+        details: "SENSITIVE_DATABASE_DETAILS",
+      } as never);
+      const serialized = JSON.stringify(events);
+      assert(events.length === 1, "Safe local diagnostic was not logged.");
+      assert(!serialized.includes("SENSITIVE"), "Sensitive diagnostic content was retained.");
+      assert(Object.keys(events[0] as object).every((key) => ["stage", "code", "httpStatus", "rpcFunction", "supabaseCode"].includes(key)), "Unexpected diagnostic field was retained.");
+    },
+  },
+  {
+    name: "RPC result parser handles the actual Supabase array and snake-case fields",
+    run: () => {
+      const parsed = parseResearchRpcResult([
+        {
+          public_research_code: "SDA-SYNTHETIC",
+          assessment_id: "c26baa32-bf64-4f10-bd2f-3f86409e147a",
+        },
+      ]);
+      assert(parsed?.publicResearchCode === "SDA-SYNTHETIC", "RPC public code was not parsed.");
+      assert(parsed.assessmentId === "c26baa32-bf64-4f10-bd2f-3f86409e147a", "RPC assessment ID was not parsed.");
+      assert(parseResearchRpcResult([{ publicResearchCode: "wrong", assessmentId: "wrong" }]) === null, "Camel-case RPC fields were incorrectly accepted.");
+    },
+  },
+  {
+    name: "local API failures expose only safe stage and code diagnostics",
+    run: () => {
+      const message = formatLocalApiFailure("Quick POST", 500, {
+        success: false,
+        code: "research_submission_failed",
+        diagnostic: {
+          stage: "rpc_response_receipt",
+          code: "rpc_database_error",
+          supabaseCode: "42501",
+          payload: "SENSITIVE_PAYLOAD",
+        },
+      });
+      assert(message.includes("HTTP 500"), "Local failure omitted HTTP status.");
+      assert(message.includes("API stage=rpc_response_receipt"), "Local failure omitted diagnostic stage.");
+      assert(message.includes("diagnostic code=rpc_database_error"), "Local failure omitted diagnostic code.");
+      assert(!message.includes("SENSITIVE"), "Local failure printed payload data.");
+    },
+  },
+  {
+    name: "RPC source contract matches the applied migration contract",
+    run: () => {
+      const route = readFileSync(resolve(process.cwd(), "src/app/api/research-submissions/route.ts"), "utf8");
+      const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/001_research_schema.sql"), "utf8");
+      assert(RESEARCH_RPC_FUNCTION_NAME === "submit_research_assessment", "RPC function constant changed.");
+      assert(RESEARCH_RPC_PARAMETER_NAME === "p_submission", "RPC parameter constant changed.");
+      assert(route.includes('rpc("submit_research_assessment", {'), "Route RPC function name changed.");
+      assert(route.includes("p_submission: databasePayload"), "Route RPC parameter name changed.");
+      assert(!/\.(?:single|maybeSingle)\(/.test(route), "Route incorrectly applies single-row modifiers to RPC.");
+      assert(migration.includes("grant execute on function public.submit_research_assessment(jsonb) to service_role"), "Service role RPC grant is missing.");
+      assert(migration.includes("returns table(public_research_code text, assessment_id uuid)"), "RPC return fields changed.");
+    },
   },
   {
     name: "local harness timeout aborts an unresolved operation and clears its timer",

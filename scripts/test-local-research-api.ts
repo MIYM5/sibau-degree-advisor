@@ -179,6 +179,35 @@ interface ApiResponseBody {
   code?: unknown;
   publicResearchCode?: unknown;
   assessmentId?: unknown;
+  diagnostic?: unknown;
+}
+
+function safeDiagnosticValue(value: unknown): string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(value)
+    ? value
+    : "unavailable";
+}
+
+export function formatLocalApiFailure(
+  stage: string,
+  status: number,
+  body: ApiResponseBody,
+): string {
+  const diagnostic =
+    typeof body.diagnostic === "object" && body.diagnostic !== null
+      ? (body.diagnostic as Record<string, unknown>)
+      : {};
+  return `${stage} failed: HTTP ${status}; API stage=${safeDiagnosticValue(diagnostic.stage)}; diagnostic code=${safeDiagnosticValue(diagnostic.code)}; Supabase code=${safeDiagnosticValue(diagnostic.supabaseCode)}.`;
+}
+
+function assertApiResponse(
+  condition: unknown,
+  stage: string,
+  response: { status: number; body: ApiResponseBody },
+): asserts condition {
+  if (!condition) {
+    throw new Error(formatLocalApiFailure(stage, response.status, response.body));
+  }
 }
 
 function closeConnectionFetch(
@@ -412,12 +441,13 @@ export async function runLocalResearchApiTest(
       quick,
       "Quick POST",
     );
-    assert(
+    assertApiResponse(
       quickResponse.status === 201 &&
         quickResponse.body.success === true &&
         typeof quickResponse.body.publicResearchCode === "string" &&
         typeof quickResponse.body.assessmentId === "string",
-      "Synthetic Quick submission was not accepted.",
+      "Quick POST",
+      quickResponse,
     );
     passStage("Quick POST");
 
@@ -449,12 +479,13 @@ export async function runLocalResearchApiTest(
       detailed,
       "Detailed POST",
     );
-    assert(
+    assertApiResponse(
       detailedResponse.status === 201 &&
         detailedResponse.body.success === true &&
         typeof detailedResponse.body.publicResearchCode === "string" &&
         typeof detailedResponse.body.assessmentId === "string",
-      "Synthetic Detailed submission was not accepted.",
+      "Detailed POST",
+      detailedResponse,
     );
     passStage("Detailed POST");
 
@@ -465,10 +496,11 @@ export async function runLocalResearchApiTest(
       quick,
       "duplicate rejection",
     );
-    assert(
+    assertApiResponse(
       duplicateResponse.status === 409 &&
         duplicateResponse.body.code === "duplicate_submission",
-      "Duplicate synthetic submission was not rejected safely.",
+      "duplicate rejection",
+      duplicateResponse,
     );
     passStage("duplicate rejection");
 
@@ -483,10 +515,11 @@ export async function runLocalResearchApiTest(
       invalidConsent,
       "invalid-consent rejection",
     );
-    assert(
+    assertApiResponse(
       invalidConsentResponse.status === 400 &&
         invalidConsentResponse.body.code === "invalid_submission",
-      "Invalid-consent synthetic submission was not rejected safely.",
+      "invalid-consent rejection",
+      invalidConsentResponse,
     );
     passStage("invalid-consent rejection");
 
@@ -501,10 +534,11 @@ export async function runLocalResearchApiTest(
       missingRecommendation,
       "incomplete-program rejection",
     );
-    assert(
+    assertApiResponse(
       missingRecommendationResponse.status === 400 &&
         missingRecommendationResponse.body.code === "invalid_submission",
-      "Incomplete-recommendation synthetic submission was not rejected safely.",
+      "incomplete-program rejection",
+      missingRecommendationResponse,
     );
     passStage("incomplete-program rejection");
 
