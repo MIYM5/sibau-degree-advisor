@@ -28,7 +28,9 @@ import {
 import { createSyntheticDetailedResearchSubmission } from "./fixtures/synthetic-detailed-research-submission";
 import { createSyntheticQuickResearchSubmission } from "./fixtures/synthetic-quick-research-submission";
 import {
+  LocalResearchTestResources,
   LocalResearchTestSafetyError,
+  LocalResearchTestTimeoutError,
   assertLocalSyntheticResearchTestSafety,
 } from "./test-local-research-api";
 
@@ -244,7 +246,7 @@ const safeLocalEnvironment = {
   SUPABASE_SERVICE_ROLE_KEY: "synthetic-local-test-placeholder",
 };
 
-const tests: readonly { name: string; run: () => void }[] = [
+const tests: readonly { name: string; run: () => void | Promise<void> }[] = [
   {
     name: "valid adult Quick submission is accepted",
     run: () => assert(validateResearchSubmission(quick, adultGovernance).isValid, "Valid Quick submission was rejected."),
@@ -597,6 +599,71 @@ const tests: readonly { name: string; run: () => void }[] = [
     run: () => localSafetyRejects({ ...safeLocalEnvironment, NEXT_PUBLIC_SUPABASE_URL: "https://project.supabase.co" }, "local_supabase_url_required"),
   },
   {
+    name: "local harness timeout aborts an unresolved operation and clears its timer",
+    run: async () => {
+      const resources = new LocalResearchTestResources();
+      let signalWasAborted = false;
+      try {
+        await resources.runWithTimeout(
+          "synthetic database timeout test",
+          10,
+          (signal) =>
+            new Promise<never>((_, reject) => {
+              signal.addEventListener(
+                "abort",
+                () => {
+                  signalWasAborted = true;
+                  reject(signal.reason);
+                },
+                { once: true },
+              );
+            }),
+        );
+        throw new Error("Unresolved operation did not time out.");
+      } catch (error) {
+        assert(error instanceof LocalResearchTestTimeoutError, "Timeout returned the wrong error type.");
+        assert(error.stage === "synthetic database timeout test", "Timeout lost its stage name.");
+      } finally {
+        await resources.cleanup();
+      }
+      assert(signalWasAborted, "Timed-out operation did not receive an abort signal.");
+      assert(resources.activeOperationCount === 0, "Timed-out operation retained an active controller.");
+    },
+  },
+  {
+    name: "local harness cleanup aborts active work and runs cleanup exactly once",
+    run: async () => {
+      const resources = new LocalResearchTestResources();
+      let cleanupCount = 0;
+      resources.registerCleanup(() => {
+        cleanupCount += 1;
+      });
+      const pending = resources
+        .runWithTimeout(
+          "synthetic cleanup test",
+          1_000,
+          (signal) =>
+            new Promise<never>((_, reject) => {
+              signal.addEventListener(
+                "abort",
+                () => reject(new Error("Synthetic operation aborted.")),
+                { once: true },
+              );
+            }),
+        )
+        .catch((error: unknown) => error);
+
+      await Promise.resolve();
+      await resources.cleanup();
+      const result = await pending;
+      await resources.cleanup();
+
+      assert(result instanceof Error, "Cleanup did not abort the active operation.");
+      assert(cleanupCount === 1, "Cleanup action did not run exactly once.");
+      assert(resources.activeOperationCount === 0, "Cleanup retained an active controller.");
+    },
+  },
+  {
     name: "local harness uses the POST API and does not call the database function directly",
     run: () => {
       const harness = readFileSync(resolve(process.cwd(), "scripts/test-local-research-api.ts"), "utf8");
@@ -620,9 +687,17 @@ const tests: readonly { name: string; run: () => void }[] = [
   },
 ];
 
-for (const test of tests) {
-  test.run();
-  console.log(`PASS: ${test.name}`);
+async function runTests(): Promise<void> {
+  for (const test of tests) {
+    await test.run();
+    console.log(`PASS: ${test.name}`);
+  }
+
+  console.log(`\n${tests.length} research-submission validation tests passed.`);
 }
 
-console.log(`\n${tests.length} research-submission validation tests passed.`);
+runTests().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : "Unknown test failure.";
+  console.error(message);
+  process.exitCode = 1;
+});
